@@ -1,0 +1,13 @@
+name: weave
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - cdsapi
+  - numpy
+  - pandas
+  - xarray
+  - matplotlib
+  - seaborn
+  

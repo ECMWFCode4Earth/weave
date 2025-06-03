@@ -114,7 +114,7 @@ for model in models:
             "emissions": ["ssp2_4_5"],
             "variable": [var],
             "technology": [
-                "30",
+                #"30",
                 "31",
                 "32",
                 "33",

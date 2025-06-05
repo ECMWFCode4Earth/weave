@@ -1,7 +1,12 @@
 import os
+import sys
 import shutil
 import zipfile
 from pathlib import Path
+
+config_dir = os.path.abspath("../")
+sys.path.append(config_dir)
+
 from config import BDD_PATH, TRASH_PATH
 
 os.makedirs(TRASH_PATH, exist_ok=True)
@@ -14,7 +19,7 @@ for input_file in files_to_unzip:
     os.makedirs(output_path, exist_ok=True)
 
     print(f'Unzipping file {input_file} to {output_path}')
-    
+
     with zipfile.ZipFile(input_file, 'r') as zip_ref:
         zip_ref.extractall(output_path)
 

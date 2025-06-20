@@ -10,20 +10,20 @@ from config import BDD_PATH
 
 data_path= BDD_PATH.joinpath('PECD4.1')
 
-def Get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> pd.DataFrame:
+def get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> pd.DataFrame:
     global BDD_PATH, data_path
 
     # This block ensures that the user provides valid inputs for variable, period, and model.
-    # The "Explore_database" function is called to display the available options and help the user make a selection.
+    # The "explore_database" function is called to display the available options and help the user make a selection.
 
     while (variable == '')|(os.path.exists(str(data_path.joinpath(variable)))==False):
         variable = '' # Reset variable if the one provided by the user doesn't exist
-        Explore_database(variable, period)
+        explore_database(variable, period)
         variable = input("Enter the variable name (from the list above): ")
 
     while (period == '')|(os.path.exists(str(data_path.joinpath(variable, period)))==False):
         period =''
-        Explore_database(variable, period)
+        explore_database(variable, period)
         period = input("Enter the period (from the list above): ")
 
     if period == 'historical':
@@ -31,7 +31,7 @@ def Get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> 
     else:
         while (model == '')|(os.path.exists(str(data_path.joinpath(variable, period, model)))==False):
             model = ''
-            Explore_database(variable, period)
+            explore_database(variable, period)
             model = input("Enter the model name (from the list above): ")
     
     files_paths = [f for f in glob.glob(str(data_path.joinpath(variable, period, model))+'/*.csv')]
@@ -44,7 +44,7 @@ def Get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> 
 
     return(data)
 
-def Explore_database(variable, period):
+def explore_database(variable, period):
     '''
     This function explores the database and prints the available variables, periods, and models.
     It uses the global variable `data_path` to determine the root directory of the database.

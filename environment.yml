@@ -11,4 +11,5 @@ dependencies:
   - xarray
   - matplotlib
   - seaborn
+  - cartopy
   

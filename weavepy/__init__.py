@@ -11,5 +11,12 @@ import seaborn as sns
 
 # Specific functions
 from .load import get_data, explore_database
-from .events import find_events, identify_problematic_events
+from .events import find_events, identify_events
 from .plot import event_stripplot, nb_events_barplot, event_duration_histplot, event_seasonnality_histplot
+
+model_aliases = {
+    "historical":"historical",
+    "cmcc_cm2_sr5":"CMR5",
+    "ec_earth3":"ECE3", 
+    "mpi_esm1_2_hr":"MEHR", 
+}

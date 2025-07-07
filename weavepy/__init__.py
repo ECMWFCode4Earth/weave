@@ -9,8 +9,11 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import seaborn as sns
 
+# Interface
+from tqdm import tqdm
+
 # Specific functions
-from .load import get_data, explore_database
+from .load import get_data, explore_database, load_vars
 from .events import find_events, identify_events
 from .plot import event_stripplot, nb_events_barplot, event_duration_histplot, event_seasonnality_histplot
 

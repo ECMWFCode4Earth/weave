@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import glob
 from tqdm import tqdm
+import xarray as xr
 
 config_dir = os.path.abspath("../")
 sys.path.append(config_dir)
@@ -11,6 +12,22 @@ from config import BDD_PATH
 
 data_path= BDD_PATH.joinpath('PECD4.1')
 
+def load_vars(vars, historical = True, future = True, future_models = [], country = 'FR',): # TODO : Implement aliases?
+    # Load data
+    data = {}
+    for var in tqdm(vars):
+        print(var)
+        data[var] = {}
+        if historical:
+            data[var]["historical"] = get_data(variable=var, period="historical", verbose = False)[country
+                ].to_xarray().rename(var).to_dataset().assign(model = "ERA5")
+        if future & (len(future_models) > 0):
+            for model in future_models :
+                data[var][model] = get_data(variable=var, period="future", model = model, verbose = False)[country
+                    ].to_xarray().rename(var).to_dataset().assign(model = model)
+        data[var] = xr.concat(data[var].values(), dim = "model")
+    return xr.merge(data.values())
+    
 def get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> pd.DataFrame:
     global BDD_PATH, data_path
 

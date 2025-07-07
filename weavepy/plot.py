@@ -3,7 +3,7 @@ import cartopy.crs as ccrs
 import seaborn as sns
 import numpy as np
 
-def event_stripplot(bool_series, ax, title = '', color = None):
+def event_stripplot(bool_series, ax, title = '', color = None, fill_between_kws = dict()):
     """
     bool_series (pd.Series): Boolean series where the days when the condition is met are True, and the others are false
     ax (matplotlib.axes._axes.Axes): axis object on which to draw
@@ -11,7 +11,7 @@ def event_stripplot(bool_series, ax, title = '', color = None):
     color (str): color for the time series
     """
 
-    ax.fill_between(bool_series.index, np.where(bool_series, 1, 0), color = color)
+    ax.fill_between(bool_series.index, np.where(bool_series, 1, 0), color = color, **fill_between_kws)
     ax.set_ylim(0.1,0.9)
     ax.set_yticks([])
     ax.set_title(title)

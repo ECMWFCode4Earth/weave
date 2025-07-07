@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import glob
+from tqdm import tqdm
 
 config_dir = os.path.abspath("../")
 sys.path.append(config_dir)
@@ -13,6 +14,7 @@ data_path= BDD_PATH.joinpath('PECD4.1')
 def get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> pd.DataFrame:
     global BDD_PATH, data_path
 
+    # --
     # This block ensures that the user provides valid inputs for variable, period, and model.
     # The "explore_database" function is called to display the available options and help the user make a selection.
 
@@ -33,11 +35,15 @@ def get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> 
             model = ''
             explore_database(variable, period)
             model = input("Enter the model name (from the list above): ")
+    # --
     
     files_paths = [f for f in glob.glob(str(data_path.joinpath(variable, period, model))+'/*.csv')]
     
     data = pd.concat((pd.read_csv(f, sep=',',comment='#') for f in files_paths), ignore_index=True)
 
+    data["Date"] = pd.to_datetime(data.Date) # Convert date to pandas datetime
+    data = data.set_index("Date")
+    
     if verbose:
         print()
         print(f'Data loaded from {data_path.joinpath(variable, period, model)}')

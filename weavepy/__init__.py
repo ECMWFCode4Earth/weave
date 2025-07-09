@@ -16,6 +16,7 @@ from tqdm import tqdm
 from .load import get_data, explore_database, load_vars
 from .events import find_events, identify_events
 from .plot import event_stripplot, nb_events_barplot, event_duration_histplot, event_seasonnality_histplot
+from .utils import get_period_length, get_period_min_max
 
 model_aliases = {
     "historical":"historical",

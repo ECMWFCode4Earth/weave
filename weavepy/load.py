@@ -1,7 +1,7 @@
 import os
 import sys
 import pandas as pd
-import glob
+import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
 
@@ -9,8 +9,6 @@ config_dir = os.path.abspath("../")
 sys.path.append(config_dir)
 
 from config import BDD_PATH
-
-data_path= BDD_PATH.joinpath('PECD4.1')
 
 def load_vars(vars, historical = True, future = True, future_models = [], country = 'FR',): # TODO : Implement aliases?
     # Load data
@@ -27,57 +25,63 @@ def load_vars(vars, historical = True, future = True, future_models = [], countr
                     ].to_xarray().rename(var).to_dataset().assign(model = model)
         data[var] = xr.concat(data[var].values(), dim = "model")
     return xr.merge(data.values())
-    
-def get_data(variable:str='', period:str='', model:str='',verbose:bool=True) -> pd.DataFrame:
-    global BDD_PATH, data_path
 
-    # --
-    # This block ensures that the user provides valid inputs for variable, period, and model.
-    # The "explore_database" function is called to display the available options and help the user make a selection.
+#PECD4.1
+#PECD4.1/2m_temperature/future/cmcc_cm2_sr5
+#P_CMI6_CMCC_CMR5_TA-_0002m_Pecd_NUT0_S201501010000_E201512312300_INS_TIM_01h_NA-_cdf_org_NA_SP245_NA---_NA---_PECD4.1_fv1.csv (len22)
 
-    while (variable == '')|(os.path.exists(str(data_path.joinpath(variable)))==False):
-        variable = '' # Reset variable if the one provided by the user doesn't exist
-        explore_database(variable, period)
-        variable = input("Enter the variable name (from the list above): ")
+#PECD4.2
+#PECD4.2/NUTS0/PROJ/ENER/ECE3/SP126/SPV/NUT0
+#P_CMI6_ECEC_ECE3_SPV_0000m_Pecd_NUT0_S201501010000_E201512312300_CFR_TIM_01h_NA-_noc_org_60_SP126_NA---_PhM03_PECD4.2_fv1.csv (len22)
 
-    while (period == '')|(os.path.exists(str(data_path.joinpath(variable, period)))==False):
-        period =''
-        explore_database(variable, period)
-        period = input("Enter the period (from the list above): ")
-
-    if period == 'historical':
-        model = ''
-    else:
-        while (model == '')|(os.path.exists(str(data_path.joinpath(variable, period, model)))==False):
-            model = ''
-            explore_database(variable, period)
-            model = input("Enter the model name (from the list above): ")
-    # --
-    
-    files_paths = [f for f in glob.glob(str(data_path.joinpath(variable, period, model))+'/*.csv')]
-    
-    data = pd.concat((pd.read_csv(f, sep=',',comment='#') for f in files_paths), ignore_index=True)
-
-    data["Date"] = pd.to_datetime(data.Date) # Convert date to pandas datetime
-    data = data.set_index("Date")
-    
-    if verbose:
-        print()
-        print(f'Data loaded from {data_path.joinpath(variable, period, model)}')
-
-    return(data)
-
-def explore_database(variable, period):
+def get_data(variable: str, bdd_version: float = 4.2) -> xr.Dataset:
     '''
-    This function explores the database and prints the available variables, periods, and models.
-    It uses the global variable `data_path` to determine the root directory of the database.
-    It prints the structure of the database 1 level down from the provided variable (and period if provided).
+    It seems to be compatible with both PECD4.1 and PECD4.2. but no complete testing has been done yet.
+    This function saturates the memmory, it needs to be re-writen or the workflow must be changed to load less data at a time.
     '''
-    global data_path
-    exploration_depth = 1 if variable=='' else 2 if period=='' else 3
-    for root, dirs, files in os.walk(str(data_path)):
-        if (exploration_depth==1)|((exploration_depth==2)&(variable in root))|((exploration_depth==3)&(variable+'/'+period in root)):
-            level = root.replace(str(data_path), '').count(os.sep)
-            indent = ' ' * 4 * (level)
-            if level == exploration_depth:
-                print('{}{}'.format(indent, os.path.basename(root)))
+    data_path= BDD_PATH.joinpath(f'PECD{str(bdd_version)}')
+    #########################################################################################################################################
+    ##################### I voluntarily add conditions on the variable, tech and model here for testing purposes.############################
+    ################## If not, the memory saturates and the program crashes (with 32Go of RAM and 34Go of swap memory). #####################
+    variable = 'SPV'
+    all_files = [f for f in data_path.rglob('*.csv') if (variable in str(f))&('ReGrA' not in str (f))&('_60_' in str(f))&('MRI-' in str(f))]
+    #########################################################################################################################################
+
+    #all_files = [f for f in data_path.rglob('*.csv') if (variable in str(f))&('ReGrA' not in str (f))]
+
+    if not all_files:
+        raise FileNotFoundError("No matching CSV files found.")
+
+    # Create a metadata dataframe
+    meta = pd.DataFrame({
+        'path': all_files,
+        'basename': [os.path.basename(f) for f in all_files]
+    })
+
+    # Extract metadata (adjust indices as needed based on filename structure)
+    meta[['source', 'model', 'institute']] = meta['basename'].str.split('_', expand=True)[[1, 2, 3]]
+    meta['model'] = meta[['source', 'model', 'institute']].agg('_'.join, axis=1)
+    meta['tech'] = meta['basename'].str.split('_').str[16]
+    meta['scenario'] = meta['basename'].str.split('_').str[17]
+
+    records = []
+    for _, row in meta.iterrows():
+        ddf = dd.read_csv(row['path'], sep=',', comment='#')
+        ddf['Date'] = dd.to_datetime(ddf['Date'])
+        ddf_long = ddf.melt(id_vars='Date', var_name='country', value_name=variable)
+        ddf_long['model'] = row['model']
+        ddf_long['scenario'] = row['scenario']
+        ddf_long['tech'] = row['tech']
+        records.append(ddf_long)
+
+    ddf_all = dd.concat(records, ignore_index=True)
+    
+    #At this stage it loads all the data, making no difference with not using dask. I kinda think it also takes longer than without dask.
+    df_all = ddf_all.compute()  #We seem to be forced to compute here because dask does not support pivot_table directly and xarray cannot create a Dataset from a dask DataFrame
+
+    #This is the memory intensive part. It is also quite long.
+    df_pivot = df_all.pivot_table(index=['Date', 'country', 'scenario', 'model', 'tech'], values=variable)
+    
+    ds = df_pivot.to_xarray().rename({'Date': 'time'})
+
+    return ds

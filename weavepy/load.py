@@ -8,7 +8,7 @@ import xarray as xr
 config_dir = os.path.abspath("../")
 sys.path.append(config_dir)
 
-from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS, MODEL_ALIASES
+from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS
 
 def load_vars(vars: list, bdd_version: float = 4.2,
               countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
@@ -20,6 +20,11 @@ def load_vars(vars: list, bdd_version: float = 4.2,
     
     data = {}
 
+    if len(countries) == 0:
+        raise ValueError("At least one country must be specified.")
+    if len(vars) == 0:
+        raise ValueError("At least one variable must be specified.")
+    
     for i,country in enumerate(countries):
         if verbose: print(f'Loading country n°{i+1}/{len(countries)} ({country})')
 

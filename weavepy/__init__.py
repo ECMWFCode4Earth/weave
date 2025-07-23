@@ -13,7 +13,7 @@ import seaborn as sns
 from tqdm import tqdm
 
 # Specific functions
-from .load import get_data, explore_database, load_vars
+from .load import get_data, load_vars
 from .events import identify_pb_days, identify_events
 from .plot import event_stripplot, nb_events_barplot, event_duration_histplot, event_seasonnality_histplot
 from .utils import get_period_length, get_period_min_max
@@ -27,11 +27,11 @@ model_aliases = {
 
 scenario_colors = {
     "historical":'k',
-    "SP119": (0,173,207),
-    "SP126": (23,60,102),
-    "SP245": (247,148,32),
-    "SP370": (231,29,37),
-    "SP585": (149,27,30),
+    "SP119": np.array([0,173,207])/256,
+    "SP126": np.array([23,60,102])/256,
+    "SP245": np.array([247,148,32])/256,
+    "SP370": np.array([231,29,37])/256,
+    "SP585": np.array([149,27,30])/256,
 }
 
 model_linestyles = {
@@ -39,7 +39,13 @@ model_linestyles = {
     "AWCM":'--',
     "BCCS":'-.',
     "CMR5":':',
-    "ECE3":'-..',
+    "ECE3":(0, (3, 1, 1, 1, 1, 1)),
     "MEHR":(0,(1,5)), # Densely dotted
     "MRM2":(5,(10,3)), # long dashes
+    'AWI-_AWCM':'--',
+    'BCC-_BCCS':'-.',
+    "CMCC_CMR5":':',
+    "ECEC_ECE3":(0, (3, 1, 1, 1, 1, 1)), #densely dashdotdotted
+    'MPI-_MEHR':(0,(1,5)), # Densely dotted
+    'MRI-_MRM2':(5,(10,3)), # long dashes
 }

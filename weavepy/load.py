@@ -4,6 +4,7 @@ import pandas as pd
 import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
+import numpy as np
 
 config_dir = os.path.abspath("../")
 sys.path.append(config_dir)
@@ -34,54 +35,73 @@ def load_vars(vars, historical = True, future = True, future_models = [], countr
 #PECD4.2/NUTS0/PROJ/ENER/ECE3/SP126/SPV/NUT0
 #P_CMI6_ECEC_ECE3_SPV_0000m_Pecd_NUT0_S201501010000_E201512312300_CFR_TIM_01h_NA-_noc_org_60_SP126_NA---_PhM03_PECD4.2_fv1.csv (len22)
 
-def get_data(variable: str, bdd_version: float = 4.2) -> xr.Dataset:
+
+def get_data(variable: str, bdd_version: float = 4.2, 
+             countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
+             aggregation_frequency: str = "D", aggregation_function: str = "mean", # Aggregation
+             verbose: bool = False) -> xr.Dataset:
     '''
     It seems to be compatible with both PECD4.1 and PECD4.2. but no complete testing has been done yet.
     This function saturates the memmory, it needs to be re-writen or the workflow must be changed to load less data at a time.
     '''
     data_path= BDD_PATH.joinpath(f'PECD{str(bdd_version)}')
-    #########################################################################################################################################
-    ##################### I voluntarily add conditions on the variable, tech and model here for testing purposes.############################
-    ################## If not, the memory saturates and the program crashes (with 32Go of RAM and 34Go of swap memory). #####################
-    variable = 'SPV'
-    all_files = [f for f in data_path.rglob('*.csv') if (variable in str(f))&('ReGrA' not in str (f))&('_60_' in str(f))&('MRI-' in str(f))]
-    #########################################################################################################################################
-
-    #all_files = [f for f in data_path.rglob('*.csv') if (variable in str(f))&('ReGrA' not in str (f))]
-
+    if verbose: print(data_path)
+    
+    # List all files available for the given variable
+    all_files = [f for f in data_path.rglob('*.csv') if (variable in str(f))&('ReGrA' not in str (f))] 
+    if verbose : print(len(all_files))
+        
     if not all_files:
         raise FileNotFoundError("No matching CSV files found.")
 
-    # Create a metadata dataframe
+    # Metadata dataframe : Contains the list of available files with the corresponding model, techno and scenario.
+    ## Create the dataframe
     meta = pd.DataFrame({
         'path': all_files,
         'basename': [os.path.basename(f) for f in all_files]
     })
 
-    # Extract metadata (adjust indices as needed based on filename structure)
-    meta[['source', 'model', 'institute']] = meta['basename'].str.split('_', expand=True)[[1, 2, 3]]
-    meta['model'] = meta[['source', 'model', 'institute']].agg('_'.join, axis=1)
+    ## Extract metadata (adjust indices as needed based on filename structure)
+    meta[['model', 'institute']] = meta['basename'].str.split('_', expand=True)[[2, 3]]
+    meta['model'] = meta[['model', 'institute']].agg('_'.join, axis=1).replace({"ECMW_T639":"ERA5"})
     meta['tech'] = meta['basename'].str.split('_').str[16]
-    meta['scenario'] = meta['basename'].str.split('_').str[17]
+    meta['scenario'] = meta['basename'].str.split('_').str[17].replace({"NA---":"historical"})
 
-    records = []
-    for _, row in meta.iterrows():
-        ddf = dd.read_csv(row['path'], sep=',', comment='#')
-        ddf['Date'] = dd.to_datetime(ddf['Date'])
-        ddf_long = ddf.melt(id_vars='Date', var_name='country', value_name=variable)
-        ddf_long['model'] = row['model']
-        ddf_long['scenario'] = row['scenario']
-        ddf_long['tech'] = row['tech']
-        records.append(ddf_long)
 
-    ddf_all = dd.concat(records, ignore_index=True)
+    ## Filter
+    if len(technos) > 0:
+        meta = meta[meta.tech.isin(technos)]
+    if len(models) > 0:
+        meta = meta[meta.model.isin(models)]
+    if len(scenarios) > 0:
+        meta = meta[meta.scenario.isin(scenarios)]
     
-    #At this stage it loads all the data, making no difference with not using dask. I kinda think it also takes longer than without dask.
-    df_all = ddf_all.compute()  #We seem to be forced to compute here because dask does not support pivot_table directly and xarray cannot create a Dataset from a dask DataFrame
+    if verbose : print(len(meta))
 
-    #This is the memory intensive part. It is also quite long.
+    # Load (lazily) the actual files 
+    records = []
+    for _, row in tqdm(meta.iterrows()):
+        df = pd.read_csv(row['path'], sep=',', comment='#', usecols = ["Date"] + countries)
+        df['Date'] = dd.to_datetime(df['Date'])
+        # - Aggregation step -
+        df = df.resample(aggregation_frequency, on = "Date").agg(aggregation_function).reset_index()
+        # --
+        df_long = df.melt(id_vars='Date', var_name='country', value_name=variable)
+        df_long['model'] = row['model']
+        df_long['scenario'] = row['scenario']
+        df_long['tech'] = row['tech']
+        records.append(df_long)
+    df_all = pd.concat(records, ignore_index=True)
+    
+    # Load data into memory for pivot_table
+    #df_all = ddf_all.compute()  
+
+    # Prepare output
+    if verbose : print("Starting pivot_table")
+    ## NB: This is the memory intensive part. It is also quite long.
     df_pivot = df_all.pivot_table(index=['Date', 'country', 'scenario', 'model', 'tech'], values=variable)
     
+    if verbose : print("Converting to xr...")
     ds = df_pivot.to_xarray().rename({'Date': 'time'})
 
     return ds

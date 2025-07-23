@@ -32,4 +32,6 @@ def identify_events(series, model = "", scenario = "", country = ""):
                 event = pd.DataFrame([[model, scenario, country, eventID, start, end, d-start]], columns = columns)
                 events = pd.concat([events, event])
                 eventID += 1
-    return events.assign(year = events.start.dt.year)
+    if "start" in events.columns:
+        events = events.assign(year = events.start.dt.year)
+    return events

@@ -8,7 +8,7 @@ import xarray as xr
 config_dir = os.path.abspath("../")
 sys.path.append(config_dir)
 
-from config import BDD_PATH
+from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS, MODEL_ALIASES
 
 def load_vars(vars: list, bdd_version: float = 4.2,
               countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
@@ -19,12 +19,37 @@ def load_vars(vars: list, bdd_version: float = 4.2,
     # models_aliases = {}
     
     data = {}
-    for var in tqdm(vars):
-        if verbose: print(var)
-        data[var] = get_data(variable=var, bdd_version=bdd_version, 
-                             countries=countries, technos=technos, models=models, scenarios=scenarios,
-                             aggregation_frequency=aggregation_frequency, aggregation_function=aggregation_function,
-                             verbose=verbose)
+
+    for i,country in enumerate(countries):
+        if verbose: print(f'Loading country n°{i+1}/{len(countries)} ({country})')
+
+        data_per_variable = {}
+        for j,var in enumerate(vars):
+            if verbose: print(f'|_Variable n°{j+1}/{len(vars)} ({var})')
+
+            data_per_techno = {}
+            subset_technos = [t for t in technos if (var in ENER_VARS)&(t!='NA')] or ['NA']
+            for k,techno in enumerate(subset_technos):
+                if verbose: print(f'|__Techno n°{k+1}/{len(subset_technos)} ({techno})')
+
+                nc_file_path = CACHE_DATA_PATH.joinpath(f"PECD{str(bdd_version)}/{var}_{techno}_{aggregation_frequency}-{aggregation_function}_{country}_PECD{str(bdd_version)}.nc")
+
+                if nc_file_path.exists():
+                    if verbose: print(f"|__ > File already exists, loading from cache: {nc_file_path}")
+                    data_per_techno[techno] = xr.open_dataset(nc_file_path)
+
+                else:
+                    if verbose: print(f"|__ > File not found, loading from source. Estimated processing time = 1 minute.")
+                    data_per_techno[techno] = get_data(variable=var, bdd_version=bdd_version, 
+                                  countries=[country], technos=[techno], models=models, scenarios=scenarios,
+                                  aggregation_frequency=aggregation_frequency, aggregation_function=aggregation_function,
+                                  verbose=verbose)
+                    os.makedirs(nc_file_path.parent, exist_ok=True)
+                    data_per_techno[techno].to_netcdf(nc_file_path)
+
+            data_per_variable[var]=xr.merge(data_per_techno.values())
+        data[country] = xr.merge(data_per_variable.values())
+
     return xr.merge(data.values())
 
 #PECD4.1
@@ -44,11 +69,11 @@ def get_data(variable: str, bdd_version: float = 4.2,
     This function saturates the memmory, it needs to be re-writen or the workflow must be changed to load less data at a time.
     '''
     data_path= BDD_PATH.joinpath(f'PECD{str(bdd_version)}')
-    if verbose: print(data_path)
+    #if verbose: print(data_path)
     
     # List all files available for the given variable
     all_files = [f for f in data_path.rglob('*.csv') if (variable in str(f))&('ReGrA' not in str (f))] 
-    if verbose : print(len(all_files))
+    #if verbose : print(len(all_files))
         
     if not all_files:
         raise FileNotFoundError("No matching CSV files found.")
@@ -75,14 +100,14 @@ def get_data(variable: str, bdd_version: float = 4.2,
     if len(scenarios) > 0:
         meta = meta[meta.scenario.isin(scenarios)]
     
-    if verbose : print(len(meta))
+    #if verbose : print(len(meta))
 
     #Loading
     #NB: This is long
     records = []
     for _, row in tqdm(meta.iterrows()):
         df = pd.read_csv(row['path'], sep=',', comment='#',
-                         usecols = lambda col: col == "Date" or any(col.startswith(country) for country in countries))
+                         usecols = None if len(countries)==0 else lambda col: col == "Date" or any(col.startswith(country) for country in countries))
         df['Date'] = dd.to_datetime(df['Date'])
         # - Aggregation step -
         df = df.resample(aggregation_frequency, on = "Date").agg(aggregation_function).reset_index()
@@ -95,11 +120,11 @@ def get_data(variable: str, bdd_version: float = 4.2,
     df_all = pd.concat(records, ignore_index=True)
     
     #Transform
-    if verbose : print("Starting pivot_table")
+    if verbose : print("|__ > Data loaded. Starting pivot_table")
     ## NB: This is memory intensive. It is also quite long.
     df_pivot = df_all.pivot_table(index=['Date', 'country', 'scenario', 'model', 'tech'], values=variable)
     
-    if verbose : print("Converting to xr...")
+    if verbose : print("|__ > Converting to Xarray Dataset")
     ds = df_pivot.to_xarray().rename({'Date': 'time'})
 
     return ds

@@ -16,8 +16,8 @@ def identify_events(series, model = "", scenario = "", country = ""):
     columns = ["model", "scenario", "country", "eventID", "start", "end", "duration"]
     event_ongoing = False
     eventID = 0
-    for d in series.date.values:
-        pb = (series.sel(date = d) == True)
+    for d in series.time.values:
+        pb = (series.sel(time = d) == True)
         d = pd.to_datetime(d)
         if pb:
             if not event_ongoing: # New event

@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import xarray as xr
+import os
 #import geopandas as gpd
 
 # Plots
@@ -14,7 +15,7 @@ from tqdm import tqdm
 
 # Specific functions
 from .load import get_data, load_vars
-from .events import identify_pb_days, identify_events
+from .events import identify_pb_days, identify_events_whole_base
 from .plot import event_stripplot, nb_events_barplot, event_duration_histplot, event_seasonnality_histplot
 from .utils import get_period_length, get_period_min_max
 

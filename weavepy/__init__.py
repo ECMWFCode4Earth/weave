@@ -19,9 +19,6 @@ from .events import identify_pb_days, identify_events_whole_base
 from .plot import event_stripplot, nb_events_barplot, event_duration_histplot, event_seasonnality_histplot
 from .utils import get_period_length, get_period_min_max
 
-CLIM_VARS = ['10WS','100WS','GHI','TA','TP','2m_temperature','10m_wind_speed','total_precipitation','surface_solar_radiation_downwards']
-ENER_VARS = ['SPV','WOF','WON','solar_generation_capacity_factor']
-
 model_aliases = {
     "historical":"historical",
     "cmcc_cm2_sr5":"CMR5",

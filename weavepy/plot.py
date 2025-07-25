@@ -50,7 +50,7 @@ def event_duration_histplot(events_dict, ax, palette = dict(), legend = True):
     sns.despine(ax=ax)
 
 doy_first_day_month = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
-def event_seasonnality_histplot(events_dict, ax, palette = dict(), legend = True):
+def event_seasonnality_histplot(doys, ax, palette = dict(), legend = True):
     """
     events_dict (dict): dictionary containing the events as output of find_events
     ax (matplotlib.axes._axes.Axes): axis object on which to draw

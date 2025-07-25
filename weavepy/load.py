@@ -69,10 +69,7 @@ def get_data(variable: str, bdd_version: float = 4.2,
              countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
              aggregation_frequency: str = "D", aggregation_function: str = "mean", # Aggregation
              verbose: bool = False) -> xr.Dataset:
-    '''
-    It seems to be compatible with both PECD4.1 and PECD4.2. but no complete testing has been done yet.
-    This function saturates the memmory, it needs to be re-writen or the workflow must be changed to load less data at a time.
-    '''
+
     data_path= BDD_PATH.joinpath(f'PECD{str(bdd_version)}')
     #if verbose: print(data_path)
     
@@ -96,14 +93,18 @@ def get_data(variable: str, bdd_version: float = 4.2,
     meta['tech'] = meta['basename'].str.split('_').str[16]
     meta['scenario'] = meta['basename'].str.split('_').str[17].replace({"NA---":"historical"})
 
-
+    if verbose : print(len(meta), meta.tech.unique(), meta.model.unique(), meta.scenario.unique())
+        
     ## Filter
     if len(technos) > 0:
         meta = meta[meta.tech.isin(technos)]
+        if verbose : print("After filtering technos", len(meta))
     if len(models) > 0:
         meta = meta[meta.model.isin(models)]
+        if verbose : print("After filtering models", len(meta))
     if len(scenarios) > 0:
         meta = meta[meta.scenario.isin(scenarios)]
+        if verbose : print("After filtering scenarios", len(meta))
     
     #if verbose : print(len(meta))
 

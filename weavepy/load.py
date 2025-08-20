@@ -1,12 +1,8 @@
 import os
-import sys
 import pandas as pd
 import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
-
-config_dir = os.path.abspath("../")
-sys.path.append(config_dir)
 
 from config import BDD_PATH, CACHE_DATA_PATH
 

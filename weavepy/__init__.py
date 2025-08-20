@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import os
+import sys
 #import geopandas as gpd
 
 # Plots
@@ -26,3 +27,5 @@ model_aliases = {
     "mpi_esm1_2_hr":"MEHR", 
 }
 
+config_dir = os.path.abspath("../")
+sys.path.append(config_dir)

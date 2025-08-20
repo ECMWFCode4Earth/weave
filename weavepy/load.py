@@ -18,9 +18,6 @@ def load_vars(vars: list, bdd_version: float = 4.2,
               aggregation_frequency: str = "D", aggregation_function: str = "mean",
               verbose:bool=False):
     
-    # TODO : Implement aliases?
-    # models_aliases = {}
-    
     data = {}
 
     if len(countries) == 0:
@@ -55,8 +52,8 @@ def load_vars(vars: list, bdd_version: float = 4.2,
                     os.makedirs(nc_file_path.parent, exist_ok=True)
                     data_per_techno[techno].to_netcdf(nc_file_path)
 
-            data_per_variable[var]=xr.merge(data_per_techno.values())
-        data[country] = xr.merge(data_per_variable.values())
+            data_per_variable[var]=xr.merge(data_per_techno.values()).squeeze()
+        data[country] = xr.merge(data_per_variable.values(), compat='override')
 
     return xr.merge(data.values())
 

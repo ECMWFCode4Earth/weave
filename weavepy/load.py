@@ -4,10 +4,7 @@ import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
 
-from config import BDD_PATH, CACHE_DATA_PATH
-
-CLIM_VARS = ['10WS','100WS','GHI','TA','TP','2m_temperature','10m_wind_speed','total_precipitation','surface_solar_radiation_downwards']
-ENER_VARS = ['SPV','WOF','WON','solar_generation_capacity_factor']
+from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS
 
 def load_vars(vars: list, bdd_version: float = 4.2,
               countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters

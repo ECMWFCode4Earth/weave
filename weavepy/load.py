@@ -6,18 +6,26 @@ import xarray as xr
 
 from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS_DICT
 
+def define_cache_path(bdd_version, var, techno, aggregation_frequency, aggregation_function, country):
+    return CACHE_DATA_PATH.joinpath(f"PECD{str(bdd_version)}/{var}_{techno}_{aggregation_frequency}-{aggregation_function}_{country}_PECD{str(bdd_version)}.nc")
+    
 def load_vars(vars: list, bdd_version: float = 4.2,
               countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
               aggregation_frequency: str = "D", aggregation_function: str = "mean",
               verbose:bool=False):
+    """ 
+    Function to load PECD4.2 data with specific time aggregation. This function uses a cache system, where if the file is not already cached, it will be, and if it is, the cached file will be loaded. The cache path is to be set in the config.py file. 
+    """
     
     data = {}
 
+    # Check that input is correct
     if len(countries) == 0:
         raise ValueError("At least one country must be specified.")
     if len(vars) == 0:
         raise ValueError("At least one variable must be specified.")
-    
+
+    # Load the data for each country, variable, techno
     for i,country in enumerate(countries):
         if verbose: print(f'Loading country n°{i+1}/{len(countries)} ({country})')
 
@@ -30,24 +38,32 @@ def load_vars(vars: list, bdd_version: float = 4.2,
             for k,techno in enumerate(subset_technos):
                 if verbose: print(f'|__Techno n°{k+1}/{len(subset_technos)} ({techno})')
 
-                nc_file_path = CACHE_DATA_PATH.joinpath(f"PECD{str(bdd_version)}/{var}_{techno}_{aggregation_frequency}-{aggregation_function}_{country}_PECD{str(bdd_version)}.nc")
+                # Define Cache NetCDF file name
+                nc_file_path = define_cache_path(bdd_version, var, techno, aggregation_frequency, aggregation_function, country)
 
+                # Check if cached file exists
                 if nc_file_path.exists():
+                    # If it does, load from cache
                     if verbose: print(f"|__ > File already exists, loading from cache: {nc_file_path}")
                     data_per_techno[techno] = xr.open_dataset(nc_file_path)
 
                 else:
+                    # If it does not, load the data
                     if verbose: print(f"|__ > File not found, loading from source. Estimated processing time = 1 minute.")
-                    data_per_techno[techno] = get_data(variable=var, bdd_version=bdd_version, 
-                                  countries=[country], technos=[techno], models=models, scenarios=scenarios,
-                                  aggregation_frequency=aggregation_frequency, aggregation_function=aggregation_function,
-                                  verbose=verbose)
+                    
+                    data_per_techno[techno] = get_data(variable=var, bdd_version=bdd_version, countries=[country], technos=[techno], models=models, scenarios=scenarios, aggregation_frequency=aggregation_frequency, aggregation_function=aggregation_function, verbose=verbose)
+
+                    # Save the new file to cache
                     os.makedirs(nc_file_path.parent, exist_ok=True)
                     data_per_techno[techno].to_netcdf(nc_file_path)
 
+           # Combine all data for this variable into one object
             data_per_variable[var]=xr.merge(data_per_techno.values()).squeeze()
+
+        # Combine all variable for one country into one object
         data[country] = xr.merge(data_per_variable.values(), compat='override')
 
+    # combine everything together
     return xr.merge(data.values())
 
 #PECD4.1
@@ -62,6 +78,9 @@ def get_data(variable: str, bdd_version: float = 4.2,
              countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
              aggregation_frequency: str = "D", aggregation_function: str = "mean", # Aggregation
              verbose: bool = False) -> xr.Dataset:
+
+    """ Read data for one variable from the database as specified in the config file. 
+    """
 
     data_path= BDD_PATH.joinpath(f'PECD{str(bdd_version)}')
     #if verbose: print(data_path)

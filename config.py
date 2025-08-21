@@ -33,6 +33,8 @@ else:
             k: v for k, v in vars(local_config).items() if not k.startswith("_")
         })
 
+# PECD4.2 parameters
+
 CLIM_VARS = ['10WS','100WS','GHI','TA','TP'] 
 ENER_VARS = ['SPV','WOF','WON'] 
 # -- GLOBAL VARIABLES -- #

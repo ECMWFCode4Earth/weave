@@ -1,14 +1,15 @@
+# System
+import os
+import sys
+
 # Data
 import numpy as np
 import pandas as pd
 import xarray as xr
-import os
-import sys
-#import geopandas as gpd
 
 # Plots
 import matplotlib.pyplot as plt
-import cartopy.crs as ccrs
+#import cartopy.crs as ccrs
 import seaborn as sns
 
 # Interface

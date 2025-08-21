@@ -34,6 +34,8 @@ ENER_VARS_TECHNOS = {
 
 MODEL_NAMES = ["ERA5", "AWI-_AWCM", "BCC-_BCCS", "CMCC_CMR5", "ECEC_ECE3", "MPI-_MEHR", "MRI-_MRM2"]
 
+SCENARIOS = ["historical", "SP126", "SP245", "SP370", "SP585"]
+
 COUNTRIES_LIST = ['AL','AT','BA','BE','BG','CH','CY','CZ','DE','DK','DZ','EE','EG','EH','EL','ES','FI','FR','HR','HU','IE','IL','IS','IT','JO','LB','LI','LT','LU','LV','LY','MA','MD','ME','MK','MT','NL','NO','PL','PS','PT','RO','RS','SE','SI','SK','SY','TN','TR','UA','UK','XK']
 
 model_aliases = {

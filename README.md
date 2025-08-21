@@ -14,7 +14,7 @@ It will allow users to identify and analyse problematic events using historical 
 ### On your own laptop
 1. Download or clone the present repository.
 2. Make sure you work in an environment where all the packages listed in `environment.yml` are installed.
-3. Download the [data archive](TODO: Provide link)
+3. Download the [data archive](TODO: Provide link), and unzip it in the folder of your choice.
 4. Setup config.py
 
 ### On the [ECMWF JupyterHub](jupyterhub.ecmwf.int/)

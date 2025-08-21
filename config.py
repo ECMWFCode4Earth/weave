@@ -1,21 +1,15 @@
 import importlib.util
 from pathlib import Path
 
+# Read hostname to determine how to configurate
 from socket import gethostname
 host = gethostname()
 
-_local_config = Path(__file__).with_name("local_config.py")
-if _local_config.exists():
-    spec = importlib.util.spec_from_file_location("local_config", _local_config)
-    local_config = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(local_config)
-
-    # update globals with anything defined in local_config
-    globals().update({
-        k: v for k, v in vars(local_config).items() if not k.startswith("_")
-    })
-    
-if host.startswith("spirit"):
+# --- ECMWF JupyterHub ---
+if host == 'ad6-206.bullx':
+    pass # TODO
+# --- IPSL Mesocenter: Spirit ---
+elif host.startswith("spirit"):
     #LOCAL PATHS
     BDD_VERSION = 42
     BDD_PATH = Path('/modfs/project/')
@@ -23,8 +17,21 @@ if host.startswith("spirit"):
     CACHE_DATA_PATH = Path('/data/sbourdin/PECD42_cache_data/')
     TRASH_PATH = Path('/scratchu/sbourdin/PECD42_trash')
 
-CLIM_VARS = ['10WS','100WS','GHI','TA','TP'] #,'2m_temperature','10m_wind_speed','total_precipitation','surface_solar_radiation_downwards'] #Commented variable names from PECD4.1
-ENER_VARS = ['SPV','WOF','WON'] #,'solar_generation_capacity_factor'] #Commented variable names from PECD4.1
+else: 
+    # --- Advanced: Local hidden config file (To keep your paths private when contributing) ---
+    _local_config = Path(__file__).with_name("local_config.py")
+    if _local_config.exists():
+        spec = importlib.util.spec_from_file_location("local_config", _local_config)
+        local_config = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(local_config)
+    
+        # update globals with anything defined in local_config
+        globals().update({
+            k: v for k, v in vars(local_config).items() if not k.startswith("_")
+        })
+
+CLIM_VARS = ['10WS','100WS','GHI','TA','TP'] 
+ENER_VARS = ['SPV','WOF','WON'] 
 
 ENER_VARS_TECHNOS = {
     'SPV': ['60','61','62','63'],
@@ -33,8 +40,6 @@ ENER_VARS_TECHNOS = {
 }
 
 MODEL_NAMES = ["ERA5", "AWI-_AWCM", "BCC-_BCCS", "CMCC_CMR5", "ECEC_ECE3", "MPI-_MEHR", "MRI-_MRM2"]
-
-SCENARIOS = ["historical", "SP126", "SP245", "SP370", "SP585"]
 
 COUNTRIES_LIST = ['AL','AT','BA','BE','BG','CH','CY','CZ','DE','DK','DZ','EE','EG','EH','EL','ES','FI','FR','HR','HU','IE','IL','IS','IT','JO','LB','LI','LT','LU','LV','LY','MA','MD','ME','MK','MT','NL','NO','PL','PS','PT','RO','RS','SE','SI','SK','SY','TN','TR','UA','UK','XK']
 

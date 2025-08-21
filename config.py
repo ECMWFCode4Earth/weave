@@ -1,24 +1,27 @@
 import importlib.util
 from pathlib import Path
 
-# Read hostname to determine how to configurate
+# Read hostname to determine how to configure 
 from socket import gethostname
 host = gethostname()
 
 # --- ECMWF JupyterHub ---
 if host == 'ad6-206.bullx':
     pass # TODO
+
 # --- IPSL Mesocenter: Spirit ---
 elif host.startswith("spirit"):
     #LOCAL PATHS
     BDD_VERSION = 42
     BDD_PATH = Path('/modfs/project/')
-    OUTPUT_DATA_PATH = Path('/modfs/project/')
     CACHE_DATA_PATH = Path('/data/sbourdin/PECD42_cache_data/')
     TRASH_PATH = Path('/scratchu/sbourdin/PECD42_trash')
 
+# --- LOCAL ---
 else: 
-    # --- Advanced: Local hidden config file (To keep your paths private when contributing) ---
+    # Easy: Add you paths below
+    
+    # Advanced: Local hidden config file (To keep your paths private when contributing)
     _local_config = Path(__file__).with_name("local_config.py")
     if _local_config.exists():
         spec = importlib.util.spec_from_file_location("local_config", _local_config)

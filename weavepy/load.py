@@ -4,7 +4,7 @@ import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
 
-from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS
+from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS_DICT
 
 def load_vars(vars: list, bdd_version: float = 4.2,
               countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
@@ -26,7 +26,7 @@ def load_vars(vars: list, bdd_version: float = 4.2,
             if verbose: print(f'|_Variable n°{j+1}/{len(vars)} ({var})')
 
             data_per_techno = {}
-            subset_technos = [t for t in technos if (var in ENER_VARS)&(t!='NA')] or ['NA']
+            subset_technos = [t for t in technos if (var in ENER_VARS_DICT)&(t!='NA')] or ['NA']
             for k,techno in enumerate(subset_technos):
                 if verbose: print(f'|__Techno n°{k+1}/{len(subset_technos)} ({techno})')
 

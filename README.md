@@ -9,6 +9,11 @@ It will allow users to identify and analyse problematic events using historical 
 
 [Code for Earth page](https://codeforearth.ecmwf.int/project/weave-weather-energy-analysis-visualisation-for-extremes/)
 
+# WEAVE Concept
+WEAVE is designed to study compound climate-energy events that put the electricity systems under stress in the present and future climate.
+The user defines problem days based on a threshold on a variable, and problematic events are defined as a continuous series of problem days. 
+For example, times when the temperature is cold (corresponding to high heating demand) and renewable energy production is low, threaten the demand-supply balance. 
+
 # How to use WEAVE?
 ## Download the repository and the data
 ### On your own laptop

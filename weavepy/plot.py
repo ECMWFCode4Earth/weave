@@ -165,11 +165,15 @@ def nb_event_timeseries_plotly_multi(dfs, rolling_window=21, titles=None):
     return fig_widget
 
 
-def event_duration_hist(climate_events, energy_events, compound_events):
+def event_duration_hist(climate_events, energy_events, compound_events, historical_period = (), future_period = ()):
     fig, axs = plt.subplots(3, figsize = [10, 10], sharex = True) # TODO: Rolling mean
     for i, e in enumerate([climate_events, energy_events, compound_events]):
         e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
-    
+
+        # Filter period
+        if (len(historical_period)) > 0 & (len(future_period) > 0):
+            e = e[e.year.between(*historical_period) | e.year.between(*future_period)]
+            
         # Scenarios
         for scenario in e.scenario.unique():
             e2plot = e[(e.scenario == scenario)].set_index("year")
@@ -198,10 +202,18 @@ def vonmises_kde(data, kappa, n_bins=100):
 
 doy_first_day_month = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
 
-def event_seasonality_kde(climate_days, energy_days, compound_days):
+def event_seasonality_kde(climate_days, energy_days, compound_days, historical_period = (), future_period = ()):
     fig, axs = plt.subplots(1, 3, subplot_kw = dict(projection = "polar"), figsize = (15,5))
     for i, e in enumerate([climate_days, energy_days, compound_days]):
         e["doy"] = e["time"].dt.dayofyear
+        e["year"] = e["time"].dt.year
+
+        # Filter period
+        if (len(historical_period)) > 0 & (len(future_period) > 0):
+            cond1 = (e.year >= historical_period[0]) & (e.year <= historical_period[1])
+            cond2 = (e.year >= future_period[0]) & (e.year <= future_period[1])
+            e = e.where(cond1 | cond2, drop = True)
+            
         for scenario in np.unique(e.scenario):
             days_scenario = e.sel(scenario = scenario)#.set_index("year")
             doys2plot = days_scenario.doy.where(days_scenario).values.flatten()

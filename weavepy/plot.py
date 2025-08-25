@@ -13,6 +13,15 @@ scenario_colors = {
     "SP585": np.array([149,27,30])/256,
 }
 
+scenario_colors_plotly = {
+    "historical": "black",
+    "SP119": "rgb(0,173,207)",
+    "SP126": "rgb(23,60,102)",
+    "SP245": "rgb(247,148,32)",
+    "SP370": "rgb(231,29,37)",
+    "SP585": "rgb(149,27,30)",
+}
+
 model_linestyles = {
     "ERA5":'-',
     "AWCM":'--',
@@ -27,6 +36,16 @@ model_linestyles = {
     "ECEC_ECE3":(0, (3, 1, 1, 1, 1, 1)), #densely dashdotdotted
     'MPI-_MEHR':(0,(1,5)), # Densely dotted
     'MRI-_MRM2':(5,(10,3)), # long dashes
+}
+
+model_linestyles_plotly = {
+    "ERA5": "solid",
+    "AWCM": "dash",
+    "BCCS": "dashdot",
+    "CMR5": "dot",
+    "ECE3": "solid",     
+    "MEHR": "longdashdot", 
+    "MRM2": "longdash",
 }
 
 def nb_event_timeseries(N_climate_events, N_energy_events, N_compound_events):

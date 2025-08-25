@@ -12,5 +12,10 @@ dependencies:
   - matplotlib
   - seaborn
   - cartopy
+  - plotly
+  - nbformat
+  - jupyterlab-plotly
 
 #importlib? pathlib? socket?
+
+# Install anywidget jupyter extension

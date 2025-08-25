@@ -4,6 +4,10 @@ import seaborn as sns
 import numpy as np
 import pandas as pd
 
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 scenario_colors = {
     "historical":'k',
     "SP119": np.array([0,173,207])/256,
@@ -56,12 +60,7 @@ def nb_event_timeseries(N_climate_events, N_energy_events, N_compound_events):
             Nrolls[str(scenario)] = {}
             for model in N_climate_events.model.unique():
                 N2plot = N[(N.scenario == scenario) & (N.model == model)].set_index("year")
-                # Raw data
-                #N2plot.eventID.plot(ax = axs[i], alpha = 0.25, 
-                #                    c = scenario_colors[scenario], linestyle = model_linestyles[model])
-                #axs[i].plot(N2plot.year, N2plot.eventID, alpha = 0.5,
-                #            c = scenario_colors[scenario], linestyle = model_linestyles[model])
-                # Running mean
+                #Running mean
                 Nroll = N2plot.eventID.rolling(20, center = True).mean()
                 Nrolls[str(scenario)][str(model)] = Nroll
                 Nroll.plot(ax = axs[i], 
@@ -76,6 +75,95 @@ def nb_event_timeseries(N_climate_events, N_energy_events, N_compound_events):
     axs[2].set_title("Compound events")
     plt.suptitle("Evolution of the number of events")
     plt.tight_layout()
+
+def nb_event_timeseries_plotly(N_events, rolling_window = 21):
+    Nroll = N_events.groupby(["model", "scenario"])[
+    ["year", "n_events"]].rolling(rolling_window, center = True).mean().reset_index()
+
+    # Base figure with all models (faint lines)
+    fig = px.line(
+        Nroll,
+        x="year", y="n_events",
+        color="scenario",
+        line_dash="model",
+        color_discrete_map=scenario_colors_plotly,
+        line_dash_map=model_linestyles_plotly,
+    )
+    
+    # Make all individual lines faint (works across Plotly versions)
+    fig.update_traces(opacity=0.2)
+
+    
+    # Compute multi-model mean for each scenario
+    mm_mean = (
+        Nroll.groupby(["scenario", "year"])["n_events"]
+        .mean()
+        .reset_index()
+    )
+    
+    # Add all mean traces in one go
+    fig_means = px.line(
+        mm_mean,
+        x="year", y="n_events",
+        color="scenario",
+        color_discrete_map=scenario_colors_plotly
+    )
+
+    # Style and rename each mean trace
+    for trace in fig_means.data:
+        trace.line.width = 4
+        trace.line.dash = "solid"
+        trace.opacity = 1.0
+        trace.name = f"{trace.name} mean"
+
+
+    # Merge into the main figure
+    for trace in fig_means.data:
+        fig.add_trace(trace)
+
+    fig_widget = go.FigureWidget(fig)
+    return fig_widget
+
+def nb_event_timeseries_plotly_multi(dfs, rolling_window=21, titles=None):
+    n = len(dfs)
+    if titles is None:
+        titles = [f"Dataset {i+1}" for i in range(n)]
+
+    # Create vertical subplots
+    fig = make_subplots(
+        rows=n, cols=1,
+        subplot_titles=titles,
+        shared_xaxes=True
+    )
+
+    for i, df in enumerate(dfs):
+        subfig = nb_event_timeseries_plotly(df, rolling_window=rolling_window)
+        for trace in subfig.data:
+            # Link traces across panels by scenario/model
+            trace.legendgroup = trace.name
+            trace.showlegend = (i == 0)  # only show legend in first panel
+            fig.add_trace(trace, row=i+1, col=1)
+
+    # Update layout: bottom legend, horizontal, one column per scenario
+    fig.update_layout(
+        height=350*n + 100,  # extra space for legend
+        showlegend=True,
+        legend=dict(
+            orientation="h",       # horizontal legend
+            yanchor="bottom",
+            y=-0.15,               # position below plot
+            xanchor="center",
+            x=0.5,
+            traceorder="normal",
+            itemsizing="constant"
+        ),
+        title_text="Climate Events Across Multiple Datasets"
+    )
+
+    fig_widget = go.FigureWidget(fig)
+    fig_widget
+    return fig_widget
+
 
 def event_duration_hist(climate_events, energy_events, compound_events):
     fig, axs = plt.subplots(3, figsize = [10, 10], sharex = True) # TODO: Rolling mean

@@ -18,7 +18,7 @@ from tqdm import tqdm
 # Specific functions
 from .load import get_data, load_vars
 from .events import identify_pb_days, identify_events_whole_base, count_events
-from .plot import scenario_colors, scenario_colors_plotly, model_linestyles, model_linestyles_plotly, nb_event_timeseries, event_duration_hist, event_seasonality_kde
+from .plot import scenario_colors, scenario_colors_plotly, model_linestyles, model_linestyles_plotly, nb_event_timeseries, event_duration_hist, event_seasonality_kde, nb_event_timeseries_plotly, nb_event_timeseries_plotly_multi
 from .utils import get_period_length, get_period_min_max
 
 config_dir = os.path.abspath("../")

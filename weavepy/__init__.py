@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 # Specific functions
 from .load import get_data, load_vars
-from .events import identify_pb_days, identify_events_whole_base
+from .events import identify_pb_days, identify_events_whole_base, count_events
 from .plot import scenario_colors, model_linestyles, nb_event_timeseries, event_duration_hist, event_seasonality_kde
 from .utils import get_period_length, get_period_min_max
 

@@ -50,3 +50,20 @@ def identify_events_whole_base(pb_days):
     if "start" in events.columns:
         events = events.assign(year = events.start.dt.year)
     return events
+
+def count_events(events):
+    # Step 1: count events
+    counts = events.groupby(["model", "scenario", "year"]).size()
+    
+    # Step 2: build full index per (model, scenario)
+    full_index = []
+    for (model, scenario), group in events.groupby(["model", "scenario"]):
+        years = range(group["year"].min(), group["year"].max() + 1)
+        full_index.extend([(model, scenario, y) for y in years])
+    
+    full_index = pd.MultiIndex.from_tuples(full_index, names=["model", "scenario", "year"])
+    
+    # Step 3: reindex counts to full index (missing years → 0)
+    N_events = counts.reindex(full_index, fill_value=0).reset_index(name="n_events")
+
+    return N_events#.fillna(0)

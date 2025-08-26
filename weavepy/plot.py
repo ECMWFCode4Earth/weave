@@ -10,15 +10,6 @@ from plotly.subplots import make_subplots
 import re
 
 scenario_colors = {
-    "historical":'k',
-    "SP119": np.array([0,173,207])/256,
-    "SP126": np.array([23,60,102])/256,
-    "SP245": np.array([247,148,32])/256,
-    "SP370": np.array([231,29,37])/256,
-    "SP585": np.array([149,27,30])/256,
-}
-
-scenario_colors_plotly = {
     "historical": "rgb(0,0,0)",
     "SP119": "rgb(0,173,207)",
     "SP126": "rgb(23,60,102)",
@@ -28,22 +19,6 @@ scenario_colors_plotly = {
 }
 
 model_linestyles = {
-    "ERA5":'-',
-    "AWCM":'--',
-    "BCCS":'-.',
-    "CMR5":':',
-    "ECE3":(0, (3, 1, 1, 1, 1, 1)),
-    "MEHR":(0,(1,5)), # Densely dotted
-    "MRM2":(5,(10,3)), # long dashes
-    'AWI-_AWCM':'--',
-    'BCC-_BCCS':'-.',
-    "CMCC_CMR5":':',
-    "ECEC_ECE3":(0, (3, 1, 1, 1, 1, 1)), #densely dashdotdotted
-    'MPI-_MEHR':(0,(1,5)), # Densely dotted
-    'MRI-_MRM2':(5,(10,3)), # long dashes
-}
-
-model_linestyles_plotly = {
     "ERA5": "solid",
     "AWCM": "dash",
     "BCCS": "dashdot",
@@ -53,31 +28,7 @@ model_linestyles_plotly = {
     "MRM2": "longdash",
 }
 
-def nb_event_timeseries(N_climate_events, N_energy_events, N_compound_events):
-    fig, axs = plt.subplots(3, figsize = [12, 8], sharex = True) 
-    Nrolls = {}
-    for i, N in enumerate([N_climate_events, N_energy_events, N_compound_events]):
-        for scenario in N_climate_events.scenario.unique():
-            Nrolls[str(scenario)] = {}
-            for model in N_climate_events.model.unique():
-                N2plot = N[(N.scenario == scenario) & (N.model == model)].set_index("year")
-                #Running mean
-                Nroll = N2plot.eventID.rolling(20, center = True).mean()
-                Nrolls[str(scenario)][str(model)] = Nroll
-                Nroll.plot(ax = axs[i], 
-                           c = scenario_colors[scenario], 
-                           linestyle = model_linestyles[model], 
-                          alpha = 0.5)
-            mm_mean = pd.concat(list(Nrolls[scenario].values())).rename(scenario).reset_index().groupby("year").mean()
-            mm_mean.plot(ax = axs[i], linewidth = 5, color = scenario_colors[scenario],)
-        axs[i].set_ylabel("#events")
-    axs[0].set_title("Climate events")
-    axs[1].set_title("Energy events")
-    axs[2].set_title("Compound events")
-    plt.suptitle("Evolution of the number of events")
-    plt.tight_layout()
-
-def nb_event_timeseries_plotly(N_events, rolling_window = 21):
+def nb_event_timeseries(N_events, rolling_window = 21):
     Nroll = N_events.groupby(["model", "scenario"])[
     ["year", "n_events"]].rolling(rolling_window, center = True).mean().reset_index()
 
@@ -87,8 +38,8 @@ def nb_event_timeseries_plotly(N_events, rolling_window = 21):
         x="year", y="n_events",
         color="scenario",
         line_dash="model",
-        color_discrete_map=scenario_colors_plotly,
-        line_dash_map=model_linestyles_plotly,
+        color_discrete_map=scenario_colors,
+        line_dash_map=model_linestyles,
     )
     
     # Make all individual lines faint (works across Plotly versions)
@@ -107,7 +58,7 @@ def nb_event_timeseries_plotly(N_events, rolling_window = 21):
         mm_mean,
         x="year", y="n_events",
         color="scenario",
-        color_discrete_map=scenario_colors_plotly
+        color_discrete_map=scenario_colors
     )
 
     # Style and rename each mean trace
@@ -125,7 +76,7 @@ def nb_event_timeseries_plotly(N_events, rolling_window = 21):
     fig_widget = go.FigureWidget(fig)
     return fig_widget
 
-def nb_event_timeseries_plotly_multi(dfs, rolling_window=21, titles=None):
+def nb_event_timeseries_multi(dfs, rolling_window=21, titles=None):
     n = len(dfs)
     if titles is None:
         titles = [f"Dataset {i+1}" for i in range(n)]
@@ -138,7 +89,7 @@ def nb_event_timeseries_plotly_multi(dfs, rolling_window=21, titles=None):
     )
 
     for i, df in enumerate(dfs):
-        subfig = nb_event_timeseries_plotly(df, rolling_window=rolling_window)
+        subfig = nb_event_timeseries(df, rolling_window=rolling_window)
         for trace in subfig.data:
             # Link traces across panels by scenario/model
             trace.legendgroup = trace.name
@@ -164,40 +115,13 @@ def nb_event_timeseries_plotly_multi(dfs, rolling_window=21, titles=None):
     fig_widget = go.FigureWidget(fig)
     return fig_widget
 
-
-def event_duration_hist(climate_events, energy_events, compound_events, historical_period = (), future_period = ()):
-    fig, axs = plt.subplots(3, figsize = [10, 10], sharex = True) # TODO: Rolling mean
-    for i, e in enumerate([climate_events, energy_events, compound_events]):
-        e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
-
-        # Filter period
-        if (len(historical_period)) > 0 & (len(future_period) > 0):
-            e = e[e.year.between(*historical_period) | e.year.between(*future_period)]
-            
-        # Scenarios
-        for scenario in e.scenario.unique():
-            e2plot = e[(e.scenario == scenario)].set_index("year")
-            sns.histplot(data = e2plot, x = "duration_days", ax = axs[i], 
-            color = scenario_colors[scenario], element = "step", alpha = 0.1,
-            bins = np.arange(0.5,30,1), stat = "proportion", linewidth = 2,
-            )
-            mean = e2plot.duration_days.mean()
-            axs[i].axvline(x = mean, color = scenario_colors[scenario], label = scenario)
-    axs[0].set_title("Climate events")
-    axs[1].set_title("Energy events")
-    axs[2].set_title("Compound events")
-    plt.suptitle("Duration of the events")
-    plt.legend()
-    plt.xlim(0,10)
-    plt.tight_layout()
-
-def rgb_to_rgba(rgb_str, alpha=0.2):
+def _rgb_to_rgba(rgb_str, alpha=0.2):
     """Convert 'rgb(r,g,b)' string to 'rgba(r,g,b,a)' string."""
     nums = re.findall(r'\d+', rgb_str)   # extract numbers
     r, g, b = map(int, nums)
     return f'rgba({r},{g},{b},{alpha})'
     
-def event_duration_hist_plotly(e, historical_period, future_period):
+def event_duration_hist(e, historical_period, future_period):
     e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
 
     # Filter period
@@ -216,8 +140,8 @@ def event_duration_hist_plotly(e, historical_period, future_period):
         x_step = np.repeat(edges, 2)[1:-1]
         y_step = np.repeat(counts_prop, 2)
     
-        base_color = scenario_colors_plotly[scenario]
-        fill_color = rgb_to_rgba(base_color, 0.15)
+        base_color = scenario_colors[scenario]
+        fill_color = _rgb_to_rgba(base_color, 0.15)
     
         # Histogram step + fill
         fig.add_trace(go.Scatter(
@@ -253,10 +177,7 @@ def event_duration_hist_plotly(e, historical_period, future_period):
 
     return fig
 
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-
-def event_duration_hist_plotly_multi(dfs, historical_period, future_period, titles=None):
+def event_duration_hist_multi(dfs, historical_period, future_period, titles=None):
     """
     Create a vertical multi-panel histogram figure across multiple datasets.
     Each panel shows duration histograms for scenarios with mean lines.
@@ -273,7 +194,7 @@ def event_duration_hist_plotly_multi(dfs, historical_period, future_period, titl
     )
 
     for i, df in enumerate(dfs):
-        subfig = event_duration_hist_plotly(df, historical_period, future_period)
+        subfig = event_duration_hist(df, historical_period, future_period)
         for trace in subfig.data:
             # Link legend items across panels
             trace.legendgroup = trace.name.split()[0]  # base scenario name
@@ -312,7 +233,7 @@ def vonmises_kde(data, kappa, n_bins=100):
 
 doy_first_day_month = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
 
-def event_seasonality_kde_plotly(d): 
+def event_seasonality_kde(d): 
     d["doy"] = d.time.dt.dayofyear
     
     fig = go.Figure()
@@ -334,7 +255,7 @@ def event_seasonality_kde_plotly(d):
                 theta = theta,
                 mode = 'lines',
                 name = scenario,
-                line_color = scenario_colors_plotly[scenario], 
+                line_color = scenario_colors[scenario], 
                 hovertemplate="DOY: %{customdata:.0f}<br>Density: %{r:.3f}<extra></extra>",
                 customdata=theta_doy   # attaches DOY values to each point
 
@@ -358,7 +279,7 @@ def event_seasonality_kde_plotly(d):
     
     return fig
 
-def event_seasonality_kde_plotly_multi(datasets, titles=None):
+def event_seasonality_kde_multi(datasets, titles=None):
     """
     Multi-panel polar KDE plots for event seasonality.
 
@@ -405,7 +326,7 @@ def event_seasonality_kde_plotly_multi(datasets, titles=None):
                     theta=theta_deg,
                     mode="lines",
                     name=scenario,
-                    line_color=scenario_colors_plotly[scenario],
+                    line_color=scenario_colors[scenario],
                     legendgroup=scenario,
                     showlegend=(i == 0),  # legend only in first subplot
                     hovertemplate="DOY: %{customdata:.0f}<br>Density: %{r:.3f}<extra></extra>",
@@ -440,98 +361,3 @@ def event_seasonality_kde_plotly_multi(datasets, titles=None):
 
     return go.FigureWidget(fig)
     
-def event_seasonality_kde(climate_days, energy_days, compound_days, historical_period = (), future_period = ()):
-    fig, axs = plt.subplots(1, 3, subplot_kw = dict(projection = "polar"), figsize = (15,5))
-    for i, e in enumerate([climate_days, energy_days, compound_days]):
-        e["doy"] = e["time"].dt.dayofyear
-        e["year"] = e["time"].dt.year
-
-        # Filter period
-        if (len(historical_period)) > 0 & (len(future_period) > 0):
-            cond1 = (e.year >= historical_period[0]) & (e.year <= historical_period[1])
-            cond2 = (e.year >= future_period[0]) & (e.year <= future_period[1])
-            e = e.where(cond1 | cond2, drop = True)
-            
-        for scenario in np.unique(e.scenario):
-            days_scenario = e.sel(scenario = scenario)#.set_index("year")
-            doys2plot = days_scenario.doy.where(days_scenario).values.flatten()
-            x, kde = vonmises_kde(doys2plot[~np.isnan(doys2plot)] * 2 * np.pi / 365, 180)
-            axs[i].plot(x, kde, color = scenario_colors[scenario], label = scenario)
-        axs[i].set_xticks(np.array(doy_first_day_month) * 2 * np.pi / 365, 'JFMAMJJASOND')
-        axs[i].set_yticks([])
-    axs[0].set_title("Climate events")
-    axs[1].set_title("Energy events")
-    axs[2].set_title("Compound events")
-    axs[2].legend(fontsize = "small", loc = "lower left")
-    plt.suptitle("Seasonality of the events")
-    
-    plt.tight_layout()
-
-def event_stripplot(var_days, ax, index= "date", title = '', color = None, fill_between_kws = dict()):
-    """
-    bool_series (pd.Series): Boolean series where the days when the condition is met are True, and the others are false
-    ax (matplotlib.axes._axes.Axes): axis object on which to draw
-    title (str): title for the time series
-    color (str): color for the time series
-    """
-
-    ax.fill_between(var_days[index], np.where(var_days, 1, 0), color = color, **fill_between_kws)
-    ax.set_ylim(0.1,0.9)
-    ax.set_yticks([])
-    ax.set_title(title)
-
-def nb_events_barplot(events_dict, period_len_dict, ax, palette = dict()):
-    """
-    events_dict (dict): dictionary containing the events as output of find_events
-    period_len_dict (dict): dictionary containing the duration of the period for each dataset in events_dict
-    ax (matplotlib.axes._axes.Axes): axis object on which to draw
-    palette (dict): dictionary containing the color for the events_dict keys
-    """
-    for i, a in enumerate(events_dict):
-        if a in palette.keys():
-            ax.bar([i], [len(events_dict[a]) / period_len_dict[a]], label = a, color = palette[a],)
-        else:
-            ax.bar([i], [len(events_dict[a]) / period_len_dict[a]], label = a,)
-    ax.set_xticks(np.arange(len(events_dict)), events_dict.keys(), rotation = 90)
-    sns.despine(ax=ax)
-
-def event_duration_histplot(events_dict, ax, palette = dict(), legend = True):
-    """
-    events_dict (dict): dictionary containing the events as output of find_events
-    ax (matplotlib.axes._axes.Axes): axis object on which to draw
-    palette (dict): dictionary containing the color for the events_dict keys
-    legend (bool): whether to display the legend or not
-    """
-    
-    for a in events_dict:
-        duration = [len(event) for event in events_dict[a]]
-        if a in palette.keys():
-            sns.histplot(duration, label = a, ax = ax, kde = True, bins = np.arange(-0.5,max(duration) + 1), fill = False, element = "step", alpha = 0.5, color = palette[a])
-        else:
-            sns.histplot(duration, label = a, ax = ax, kde = True, bins = np.arange(-0.5,max(duration) + 1), fill = False, element = "step", alpha = 0.5,)
-    ax.set_xlim(0.5)
-    if legend: ax.legend()
-    sns.despine(ax=ax)
-
-doy_first_day_month = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
-def event_seasonnality_histplot(doys, ax, palette = dict(), legend = True):
-    """
-    events_dict (dict): dictionary containing the events as output of find_events
-    ax (matplotlib.axes._axes.Axes): axis object on which to draw
-    palette (dict): dictionary containing the color for the events_dict keys
-    legend (bool): whether to display the legend or not
-    """
-    
-    for a in events_dict:
-        doys = [event[0].dayofyear for event in events_dict[a]]
-        H = np.histogram(doys, bins = np.arange(0.5,366+1,6))
-        H_theta = H[1] * 2 * np.pi / 366
-        theta_mid = (H_theta[:-1] + H_theta[1:]) / 2
-        width = H_theta[1] - H_theta[0]
-        if a in palette.keys():
-            ax.bar(theta_mid, H[0], width = width, bottom = 0, alpha = 0.5, color = palette[a], label = a)
-        else:
-            ax.bar(theta_mid, H[0], width = width, bottom = 0, alpha = 0.5, label = a)
-    ax.set_xticks(np.array(doy_first_day_month) * 2 * np.pi / 366, 'JFMAMJJASOND')
-    if legend: ax.legend()
-# TODO : circular kde (Use : https://stackoverflow.com/questions/28839246/scipy-gaussian-kde-and-circular-data ?)

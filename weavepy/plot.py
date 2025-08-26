@@ -312,6 +312,134 @@ def vonmises_kde(data, kappa, n_bins=100):
 
 doy_first_day_month = [1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
 
+def event_seasonality_kde_plotly(d): 
+    d["doy"] = d.time.dt.dayofyear
+    
+    fig = go.Figure()
+    
+    for scenario in np.unique(d.scenario):
+        d_scenario = d.sel(scenario = scenario)
+        # Multi-model mean kde for this scenario
+        L = []
+        for m in np.unique(d_scenario.model):
+            d_m = d_scenario.sel(model = m)
+            doys4kde = d_m.doy.where(d_m, drop = True).values
+            if len(doys4kde) > 0:
+                L.append(vonmises_kde(doys4kde * 2 * np.pi / 365, 180))
+        theta, r = L[0][0]* 180/np.pi, np.array(L)[:,1].mean(axis = 0)
+        theta_doy = (theta / 360) * 365
+        fig.add_trace(
+            go.Scatterpolar(
+                r = r,
+                theta = theta,
+                mode = 'lines',
+                name = scenario,
+                line_color = scenario_colors_plotly[scenario], 
+                hovertemplate="DOY: %{customdata:.0f}<br>Density: %{r:.3f}<extra></extra>",
+                customdata=theta_doy   # attaches DOY values to each point
+
+        ))
+
+    month_starts = np.array(doy_first_day_month) * 360 / 365  # convert DOY → degrees
+    month_labels = list("JFMAMJJASOND")
+    fig.update_layout(
+        title = 'Climate events',
+        showlegend = True, 
+        polar=dict(
+            angularaxis=dict(
+                tickmode="array",
+                tickvals=month_starts,
+                ticktext=month_labels,
+                #direction="clockwise",    # optional: match your matplotlib convention
+                #rotation=90               # optional: set where "Jan" starts
+            )
+        )
+    )
+    
+    return fig
+
+def event_seasonality_kde_plotly_multi(datasets, titles=None):
+    """
+    Multi-panel polar KDE plots for event seasonality.
+
+    Parameters
+    ----------
+    datasets : list
+        List of xarray datasets [climate_days, energy_days, compound_days].
+    titles : list of str, optional
+        Titles for each subplot. Defaults to ["Climate events", "Energy events", "Compound events"].
+    """
+
+    n = len(datasets)
+    if titles is None:
+        titles = ["Climate events", "Energy events", "Compound events"][:n]
+
+    # Create subplot grid: one row, n polar plots
+    fig = make_subplots(
+        rows=1, cols=n,
+        subplot_titles=titles,
+        specs=[[{"type": "polar"}] * n]
+    )
+
+    for i, d in enumerate(datasets):
+        d["doy"] = d.time.dt.dayofyear
+
+        for scenario in np.unique(d.scenario):
+            d_scenario = d.sel(scenario=scenario)
+            # Multi-model mean KDE
+            L = []
+            for m in np.unique(d_scenario.model):
+                d_m = d_scenario.sel(model=m)
+                doys4kde = d_m.doy.where(d_m, drop=True).values
+                if len(doys4kde) > 0:
+                    L.append(vonmises_kde(doys4kde * 2 * np.pi / 365, 180))
+            if not L:
+                continue
+            theta_deg = L[0][0] * 180/np.pi
+            r = np.array(L)[:,1].mean(axis=0)
+            theta_doy = (theta_deg / 360) * 365  # for hover
+
+            fig.add_trace(
+                go.Scatterpolar(
+                    r=r,
+                    theta=theta_deg,
+                    mode="lines",
+                    name=scenario,
+                    line_color=scenario_colors_plotly[scenario],
+                    legendgroup=scenario,
+                    showlegend=(i == 0),  # legend only in first subplot
+                    hovertemplate="DOY: %{customdata:.0f}<br>Density: %{r:.3f}<extra></extra>",
+                    customdata=theta_doy
+                ),
+                row=1, col=i+1
+            )
+
+        # Month labels as xticks
+        fig.update_polars(
+            angularaxis=dict(
+                tickmode="array",
+                tickvals=(np.array(doy_first_day_month) * 360/365).tolist(),
+                ticktext=list("JFMAMJJASOND")
+            ),
+            radialaxis=dict(showticklabels=False, ticks="")
+        )
+
+    # Layout adjustments
+    fig.update_layout(
+        title_text="Seasonality of the events",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.2,
+            xanchor="center",
+            x=0.5
+        ),
+        height=500,
+        width=750
+    )
+
+    return go.FigureWidget(fig)
+    
 def event_seasonality_kde(climate_days, energy_days, compound_days, historical_period = (), future_period = ()):
     fig, axs = plt.subplots(1, 3, subplot_kw = dict(projection = "polar"), figsize = (15,5))
     for i, e in enumerate([climate_days, energy_days, compound_days]):

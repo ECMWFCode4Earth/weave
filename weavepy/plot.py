@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import re
 
 scenario_colors = {
     "historical":'k',
@@ -18,7 +19,7 @@ scenario_colors = {
 }
 
 scenario_colors_plotly = {
-    "historical": "black",
+    "historical": "rgb(0,0,0)",
     "SP119": "rgb(0,173,207)",
     "SP126": "rgb(23,60,102)",
     "SP245": "rgb(247,148,32)",
@@ -161,7 +162,6 @@ def nb_event_timeseries_plotly_multi(dfs, rolling_window=21, titles=None):
     )
 
     fig_widget = go.FigureWidget(fig)
-    fig_widget
     return fig_widget
 
 
@@ -191,6 +191,116 @@ def event_duration_hist(climate_events, energy_events, compound_events, historic
     plt.xlim(0,10)
     plt.tight_layout()
 
+def rgb_to_rgba(rgb_str, alpha=0.2):
+    """Convert 'rgb(r,g,b)' string to 'rgba(r,g,b,a)' string."""
+    nums = re.findall(r'\d+', rgb_str)   # extract numbers
+    r, g, b = map(int, nums)
+    return f'rgba({r},{g},{b},{alpha})'
+    
+def event_duration_hist_plotly(e, historical_period, future_period):
+    e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
+
+    # Filter period
+    if (len(historical_period)) > 0 & (len(future_period) > 0):
+        e = e[e.year.between(*historical_period) | e.year.between(*future_period)]
+
+    fig = go.Figure()
+    bins = np.arange(0.5, 30, 1)  
+
+    for scenario in e.scenario.unique():
+        dur = e.loc[e.scenario == scenario, "duration_days"].dropna().values
+        counts, edges = np.histogram(dur, bins=bins)
+        if counts.sum() == 0:
+            continue
+        counts_prop = counts / counts.sum()
+        x_step = np.repeat(edges, 2)[1:-1]
+        y_step = np.repeat(counts_prop, 2)
+    
+        base_color = scenario_colors_plotly[scenario]
+        fill_color = rgb_to_rgba(base_color, 0.15)
+    
+        # Histogram step + fill
+        fig.add_trace(go.Scatter(
+            x=x_step,
+            y=y_step,
+            mode="lines",
+            line=dict(color=base_color, width=3),
+            fill="tozeroy",
+            fillcolor=fill_color,
+            name=scenario,
+            legendgroup=scenario,       # group with mean line
+            showlegend=True,            # only this one shows in legend
+            hovertemplate="%{x}<br>proportion: %{y:.3f}<extra></extra>"
+        ))
+    
+        # Mean vertical line
+        mean_val = dur.mean()
+        fig.add_trace(go.Scatter(
+            x=[mean_val, mean_val],
+            y=[0, max(y_step)],
+            mode="lines",
+            line=dict(color=base_color, width=2, dash="dash"),
+            legendgroup=scenario,       # same group as histogram
+            showlegend=True,            # hidden from legend
+            name = scenario + " mean"
+        ))
+    
+    fig.update_layout(
+        #template = "simple_white",
+        xaxis_title = "Duration (days)",
+        yaxis_title = "Proportion"
+    )
+
+    return fig
+
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
+def event_duration_hist_plotly_multi(dfs, historical_period, future_period, titles=None):
+    """
+    Create a vertical multi-panel histogram figure across multiple datasets.
+    Each panel shows duration histograms for scenarios with mean lines.
+    """
+    n = len(dfs)
+    if titles is None:
+        titles = [f"Dataset {i+1}" for i in range(n)]
+
+    # Create subplots
+    fig = make_subplots(
+        rows=n, cols=1,
+        subplot_titles=titles,
+        shared_xaxes=True
+    )
+
+    for i, df in enumerate(dfs):
+        subfig = event_duration_hist_plotly(df, historical_period, future_period)
+        for trace in subfig.data:
+            # Link legend items across panels
+            trace.legendgroup = trace.name.split()[0]  # base scenario name
+            trace.showlegend = (i == 0) and ("mean" not in trace.name)  
+            # 👆 only show the histogram traces in the first panel's legend
+            fig.add_trace(trace, row=i+1, col=1)
+
+    # Update layout: single horizontal legend below all panels
+    fig.update_layout(
+        height=350*n + 100,
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.15,
+            xanchor="center",
+            x=0.5,
+            traceorder="normal",
+            itemsizing="constant"
+        ),
+        title_text="Event Duration Histograms Across Multiple Datasets",
+        xaxis_title="Duration (days)",
+        yaxis_title="Proportion"
+    )
+
+    return go.FigureWidget(fig)
+    
 def vonmises_kde(data, kappa, n_bins=100):
     from scipy.special import i0
     bins = np.linspace(-np.pi, np.pi, n_bins)
@@ -229,7 +339,6 @@ def event_seasonality_kde(climate_days, energy_days, compound_days, historical_p
     
     plt.tight_layout()
 
-    
 def event_stripplot(var_days, ax, index= "date", title = '', color = None, fill_between_kws = dict()):
     """
     bool_series (pd.Series): Boolean series where the days when the condition is met are True, and the others are false

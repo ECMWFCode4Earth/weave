@@ -1,16 +1,14 @@
-#import matplotlib.pyplot as plt
-#import cartopy.crs as ccrs
-#import seaborn as sns
-#import numpy as np
-#import pandas as pd
-
 import plotly.express as px
 import plotly.graph_objects as go
 
 from .plot_utils import scenario_colors, model_linestyles
+from .events import count_events
 
-def nb_event_timeseries(N_events, rolling_window = 21):
+def nb_event_timeseries(events, rolling_window = 21):
     ## 0. Computations
+    # Compute number of events
+    N_events = count_events(events)
+    
     # Compute rolling mean of number of events
     Nroll = N_events.groupby(["model", "scenario"])[
     ["year", "n_events"]].rolling(rolling_window, center = True).mean().reset_index()

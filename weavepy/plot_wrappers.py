@@ -5,8 +5,11 @@ from .plot_hists import event_duration_hist, event_seasonality_kde
 import numpy as np
 
 
-def nb_event_timeseries_multi(dfs, rolling_window=21, titles=None):
+def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", "Energy events", "Compound events"]):
+
+    # Manage input
     n = len(dfs)
+    assert (titles is None) | (len(titles) == n), "titles must be None or have the same length as dfs"
     if titles is None:
         titles = [f"Dataset {i+1}" for i in range(n)]
 
@@ -17,12 +20,13 @@ def nb_event_timeseries_multi(dfs, rolling_window=21, titles=None):
         shared_xaxes=True
     )
 
+    # Populate the panels
     for i, df in enumerate(dfs):
         subfig = nb_event_timeseries(df, rolling_window=rolling_window)
         for trace in subfig.data:
             # Link traces across panels by scenario/model
             trace.legendgroup = trace.name
-            trace.showlegend = (i == 0)  # only show legend in first panel
+            trace.showlegend = (i+1 == n)  # only show legend in last panel
             fig.add_trace(trace, row=i+1, col=1)
 
     # Update layout: bottom legend, horizontal, one column per scenario
@@ -40,6 +44,8 @@ def nb_event_timeseries_multi(dfs, rolling_window=21, titles=None):
         ),
         title_text="Climate Events Across Multiple Datasets"
     )
+
+    # TODO : Group so that we can activate/deactivate one scenario/model in one click
 
     fig_widget = go.FigureWidget(fig)
     return fig_widget

@@ -31,18 +31,18 @@ def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", 
 
     # Update layout: bottom legend, horizontal, one column per scenario
     fig.update_layout(
-        height=350*n + 100,  # extra space for legend
+        height=400*n,  # extra space for legend
         showlegend=True,
         legend=dict(
             orientation="h",       # horizontal legend
             yanchor="bottom",
-            y=-0.15,               # position below plot
+            y=-0.27,               # position below plot
             xanchor="center",
             x=0.5,
             traceorder="normal",
             itemsizing="constant"
         ),
-        title_text="Climate Events Across Multiple Datasets"
+        title_text="Evolution of the number of events"
     )
 
     # TODO : Group so that we can activate/deactivate one scenario/model in one click

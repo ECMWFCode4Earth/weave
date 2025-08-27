@@ -15,6 +15,7 @@ dependencies:
   - plotly
   - nbformat
   - jupyterlab-plotly
+  - anywidget
 
 #importlib? pathlib? socket?
 

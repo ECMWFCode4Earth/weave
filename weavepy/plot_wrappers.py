@@ -46,6 +46,7 @@ def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", 
     )
 
     # TODO : Group so that we can activate/deactivate one scenario/model in one click
+    # TODO : Make it so that hovering on the plot shows the range of the running average?
 
     fig_widget = go.FigureWidget(fig)
     return fig_widget

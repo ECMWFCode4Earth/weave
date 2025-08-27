@@ -3,7 +3,19 @@ import plotly.graph_objects as go
 
 import numpy as np
 
-def event_duration_hist(e, historical_period, future_period):
+def N_events_hist(e):
+    ## 0. Computations
+    # Compute number of events
+    N_events = count_events(e)
+    N_events = N_events.groupby(["scenario", "model"]).mean().reset_index()
+
+    fig = go.Figure()
+    
+    fig = px.bar(N_events, x = "scenario", y = "n_events", color = "model")
+
+    return fig
+
+def event_duration_hist(e):
     
     ## 0. Computations
     # Convert durations to days

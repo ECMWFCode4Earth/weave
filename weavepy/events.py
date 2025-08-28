@@ -49,15 +49,21 @@ def identify_events_whole_base(pb_days):
     events = pd.DataFrame(events, columns = ["model", "scenario", "country", "eventID", "start", "end", "duration"])
     if "start" in events.columns:
         events = events.assign(year = events.start.dt.year)
+
+    # Sort scenarios
+    sc = np.unique(events.scenario)
+    sc_order = ["historical"] + [str(sp) for sp in sc if sp.startswith("SP")]
+    events = events.assign(scenario = pd.Categorical(events["scenario"], sc_order))
+    
     return events
 
 def count_events(events):
     # Step 1: count events
-    counts = events.groupby(["model", "scenario", "year"]).size()
+    counts = events.groupby(["model", "scenario", "year"], observed = False).size()
     
     # Step 2: build full index per (model, scenario)
     full_index = []
-    for (model, scenario), group in events.groupby(["model", "scenario"]):
+    for (model, scenario), group in events.groupby(["model", "scenario"], observed = False):
         years = range(group["year"].min(), group["year"].max() + 1)
         full_index.extend([(model, scenario, y) for y in years])
     

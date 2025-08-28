@@ -7,6 +7,11 @@ from .plot_utils import *
 
 
 def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", "Energy events", "Compound events"]):
+    """
+    Multi-panel wrapper for nb_event_timeseries.
+    Subplots vertically, shared x-axis, only one legend per scenario.
+    Panels closer together.
+    """
 
     # Manage input
     n = len(dfs)
@@ -14,44 +19,48 @@ def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", 
     if titles is None:
         titles = [f"Dataset {i+1}" for i in range(n)]
 
-    # Create vertical subplots
+    # Create vertical subplots, reduce vertical spacing
     fig = make_subplots(
         rows=n, cols=1,
         subplot_titles=titles,
-        shared_xaxes=True
+        shared_xaxes=True,
+        vertical_spacing=0.05  # smaller spacing between panels
     )
 
-    # Populate the panels
     for i, df in enumerate(dfs):
         subfig = nb_event_timeseries(df, rolling_window=rolling_window)
         for trace in subfig.data:
-            # Link traces across panels by scenario/model
-            trace.legendgroup = trace.name
-            trace.showlegend = (i+1 == n)  # only show legend in last panel
+            # Only show legend in first panel
+            trace.showlegend = (i==0 and trace.showlegend)
             fig.add_trace(trace, row=i+1, col=1)
 
-    # Update layout: bottom legend, horizontal, one column per scenario
+    # Layout
     fig.update_layout(
-        height=400*n,  # extra space for legend
-        showlegend=True,
+        height=300*n,
         legend=dict(
-            orientation="h",       # horizontal legend
+            groupclick="togglegroup",
+            orientation="h",
             yanchor="bottom",
-            y=-0.27,               # position below plot
+            y=-0.15,
             xanchor="center",
-            x=0.5,
-            traceorder="normal",
-            itemsizing="constant"
+            x=0.5
         ),
-        title_text="Evolution of the number of events"
+        title=dict(
+            text=(
+                "Evolution of the number of events (running mean over "+str(rolling_window)+" years)<br><sup>Faint lines represent individual models, thick lines the multi-model mean.</sup>"
+            ),
+        )
     )
+    
+    # X-axis label only for bottom subplot
+    fig.update_xaxes(title_text="Year", row=n, col=1)
+    
+    # Y-axis label for all subplots
+    fig.update_yaxes(title_text="Number of Events")
 
-    # TODO : Group so that we can activate/deactivate one scenario/model in one click
-    # TODO : Make it so that hovering on the plot shows the range of the running average?
+    return go.FigureWidget(fig)
 
-    fig_widget = go.FigureWidget(fig)
-    return fig_widget
-
+    
 def event_count_barplot_multi(dfs, historical_period, future_period, titles=["Climate events", "Energy events", "Compound events"]):
     """
     Create horizontal subplots of event count barplots for multiple datasets.
@@ -94,7 +103,10 @@ def event_count_barplot_multi(dfs, historical_period, future_period, titles=["Cl
             # Show legend only for first subplot (avoid duplicates)
             trace.showlegend = (i == 0 and trace.showlegend)
             fig.add_trace(trace, row=1, col=i+1)
-
+    
+    # Set common y-axis title
+    fig.update_yaxes(title_text="Number of events per year", row=1, col=1)
+    
     # Update layout
     fig.update_layout(
         height=500,
@@ -110,7 +122,7 @@ def event_count_barplot_multi(dfs, historical_period, future_period, titles=["Cl
             itemsizing="constant",
             groupclick="togglegroup"
         ),
-        title_text="Event Counts per year"
+        title_text="Event Counts<br><sup>Dots represent the different models and the bars show the multi-model mean for each scenario.</sup>"
     )
 
     return go.FigureWidget(fig)

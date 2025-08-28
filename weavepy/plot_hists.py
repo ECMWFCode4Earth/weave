@@ -24,10 +24,14 @@ def event_count_barplot(df):
     ]
     symbol_map = {m: marker_symbols[i % len(marker_symbols)] for i, m in enumerate(models)}
 
-    for scenario in grouped["scenario"].unique():
+    for scenario in df.scenario.cat.categories: # grouped["scenario"].unique():
         scen_data = grouped[grouped["scenario"] == scenario]
         mean_val = scenario_means.loc[scenario_means["scenario"] == scenario, "n_events"].values[0]
 
+        if scenario == "historical":
+            hover_template = f"{scenario} (ERA5): " + "%{y:.2f}<extra></extra>"
+        else:
+            hover_template = f"{scenario} (multi-model mean): " + "%{y:.2f}<extra></extra>"
         # Add bar (multi-model mean) with transparency
         fig.add_trace(go.Bar(
             x=[scenario],
@@ -37,7 +41,7 @@ def event_count_barplot(df):
             opacity=0.5,  # semi-transparent so dots are visible
             legendgroup=scenario,
             showlegend=True,   # only this shows in legend
-            hovertemplate=f"{scenario} (multi-model mean): " + "%{y:.2f}<extra></extra>"
+            hovertemplate=hover_template
         ))
 
         # Add scatter (dots for individual models with black border)

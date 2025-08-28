@@ -3,6 +3,7 @@ import plotly.graph_objects as go
 from .plot_time_series import nb_event_timeseries
 from .plot_hists import event_duration_hist, event_seasonality_kde
 import numpy as np
+from .plot_utils import *
 
 
 def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", "Energy events", "Compound events"]):
@@ -71,7 +72,7 @@ def event_duration_hist_multi(dfs, historical_period, future_period, titles=None
     )
 
     for i, df in enumerate(dfs):
-        subfig = event_duration_hist(df, historical_period, future_period)
+        subfig = event_duration_hist(df)
         for trace in subfig.data:
             # Link legend items across panels
             trace.legendgroup = trace.name.split()[0]  # base scenario name

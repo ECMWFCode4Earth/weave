@@ -124,5 +124,7 @@ def event_seasonality_kde(d):
             )
         )
     )
+
+    # TODO : Mettre les mois dans le sens anti-trigo
     
     return fig

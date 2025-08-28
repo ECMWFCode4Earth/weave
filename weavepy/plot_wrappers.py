@@ -1,7 +1,7 @@
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from .plot_time_series import nb_event_timeseries
-from .plot_hists import event_duration_hist, event_seasonality_kde
+from .plot_hists import event_count_barplot, event_duration_hist, event_seasonality_kde
 import numpy as np
 from .plot_utils import *
 
@@ -52,6 +52,69 @@ def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", 
     fig_widget = go.FigureWidget(fig)
     return fig_widget
 
+def event_count_barplot_multi(dfs, historical_period, future_period, titles=["Climate events", "Energy events", "Compound events"]):
+    """
+    Create horizontal subplots of event count barplots for multiple datasets.
+    
+    Parameters
+    ----------
+    dfs : list of pandas.DataFrame
+        Each DataFrame must contain columns [model, scenario, year, eventID].
+    titles : list of str, optional
+        Titles for each subplot (default: Dataset 1, Dataset 2, ...).
+    """
+
+    # Manage input
+    n = len(dfs)
+    assert (titles is None) | (len(titles) == n), "titles must be None or have the same length as dfs"
+    if titles is None:
+        titles = [f"Dataset {i+1}" for i in range(n)]
+
+    # Filter period 
+    if (len(historical_period)) > 0 & (len(future_period) > 0):
+        for df in dfs:
+            df = df[df.year.between(*historical_period) | df.year.between(*future_period)]
+        
+    n = len(dfs)
+    if titles is None:
+        titles = [f"Dataset {i+1}" for i in range(n)]
+
+    # Create horizontal subplots
+    fig = make_subplots(
+        rows=1, cols=n,
+        subplot_titles=titles,
+        shared_yaxes=True
+    )
+
+    for i, df in enumerate(dfs):
+        subfig = event_count_barplot(df)
+        for trace in subfig.data:
+            # Keep scenario grouping consistent across panels
+            trace.legendgroup = trace.legendgroup
+            # Show legend only for first subplot (avoid duplicates)
+            trace.showlegend = (i == 0 and trace.showlegend)
+            fig.add_trace(trace, row=1, col=i+1)
+
+    # Update layout
+    fig.update_layout(
+        height=500,
+        width=300*n,
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.25,
+            xanchor="center",
+            x=0.5,
+            traceorder="normal",
+            itemsizing="constant",
+            groupclick="togglegroup"
+        ),
+        title_text="Event Counts per year"
+    )
+
+    return go.FigureWidget(fig)
+    
 def event_duration_hist_multi(dfs, historical_period, future_period, titles=None):
     """
     Create a vertical multi-panel histogram figure across multiple dfs.
@@ -96,7 +159,7 @@ def event_duration_hist_multi(dfs, historical_period, future_period, titles=None
             traceorder="normal",
             itemsizing="constant"
         ),
-        title_text="Event Duration Histograms Across Multiple Datasets",
+        title_text="Event Duration",
         xaxis_title="Duration (days)",
         yaxis_title="Proportion"
     )

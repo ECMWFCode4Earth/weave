@@ -1,18 +1,76 @@
 from .plot_utils import scenario_colors, model_linestyles, vonmises_kde, _rgb_to_rgba
+from .events import count_events
 import plotly.graph_objects as go
 
 import numpy as np
 
-def N_events_hist(e):
-    ## 0. Computations
-    # Compute number of events
-    N_events = count_events(e)
-    N_events = N_events.groupby(["scenario", "model"]).mean().reset_index()
+def event_count_barplot(df):
+    """
+    Plot number of events per scenario with multi-model mean (bar)
+    and individual model values (dots with distinct markers).
+    """
+    # Count events per year, then aggregate
+    df_counts = count_events(df)
+    grouped = df_counts.groupby(["scenario", "model"])["n_events"].mean().reset_index()
+    scenario_means = grouped.groupby("scenario")["n_events"].mean().reset_index()
 
     fig = go.Figure()
-    
-    fig = px.bar(N_events, x = "scenario", y = "n_events", color = "model")
 
+    # Define marker symbols for models
+    models = grouped["model"].unique()
+    marker_symbols = [
+        "circle", "square", "diamond", "cross", "x", "triangle-up",
+        "triangle-down", "star", "hexagon"
+    ]
+    symbol_map = {m: marker_symbols[i % len(marker_symbols)] for i, m in enumerate(models)}
+
+    for scenario in grouped["scenario"].unique():
+        scen_data = grouped[grouped["scenario"] == scenario]
+        mean_val = scenario_means.loc[scenario_means["scenario"] == scenario, "n_events"].values[0]
+
+        # Add bar (multi-model mean) with transparency
+        fig.add_trace(go.Bar(
+            x=[scenario],
+            y=[mean_val],
+            name=scenario,
+            marker_color=scenario_colors[scenario],
+            opacity=0.5,  # semi-transparent so dots are visible
+            legendgroup=scenario,
+            showlegend=True,   # only this shows in legend
+            hovertemplate=f"{scenario} (multi-model mean): " + "%{y:.2f}<extra></extra>"
+        ))
+
+        # Add scatter (dots for individual models with black border)
+        for _, row in scen_data.iterrows():
+            fig.add_trace(go.Scatter(
+                x=[scenario],
+                y=[row["n_events"]],
+                mode="markers",
+                name=row["model"],
+                legendgroup=scenario,
+                showlegend=False,  # hide individual markers from legend
+                marker=dict(
+                    color=scenario_colors[scenario],
+                    symbol=symbol_map[row["model"]],
+                    size=10,
+                    line=dict(color="black", width=1)  # black border
+                ),
+                hovertemplate=(
+                    f"Model: {row['model']}<br>"
+                    f"Scenario: {scenario}<br>"
+                    f"Events: {row['n_events']:.2f}<extra></extra>"
+                )
+            ))
+
+    fig.update_layout(
+        barmode="overlay",
+        xaxis_title="Scenario",
+        yaxis_title="Number of Events",
+        title="Number of Events per Scenario",
+        legend=dict(
+            groupclick="togglegroup"
+        )
+    )
     return fig
 
 def event_duration_hist(e):
@@ -20,11 +78,6 @@ def event_duration_hist(e):
     ## 0. Computations
     # Convert durations to days
     e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
-
-    # Filter period -> Do in wrapper
-#    if (len(historical_period)) > 0 & (len(future_period) > 0):
-#        e = e[e.year.between(*historical_period) | e.year.between(*future_period)]
-
     fig = go.Figure()
     bins = np.arange(0.5, 30, 1)  
 

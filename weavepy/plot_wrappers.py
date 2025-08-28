@@ -54,11 +54,14 @@ def nb_event_timeseries_multi(dfs, rolling_window=21, titles=["Climate events", 
 
 def event_duration_hist_multi(dfs, historical_period, future_period, titles=None):
     """
-    Create a vertical multi-panel histogram figure across multiple datasets.
+    Create a vertical multi-panel histogram figure across multiple dfs.
     Each panel shows duration histograms for scenarios with mean lines.
     """
 
-    # TODO : Add period selection here
+    # Filter period 
+    if (len(historical_period)) > 0 & (len(future_period) > 0):
+        for df in dfs:
+            df = df[df.year.between(*historical_period) | df.year.between(*future_period)]
     
     n = len(dfs)
     if titles is None:
@@ -77,7 +80,7 @@ def event_duration_hist_multi(dfs, historical_period, future_period, titles=None
             # Link legend items across panels
             trace.legendgroup = trace.name.split()[0]  # base scenario name
             trace.showlegend = (i == 0) and ("mean" not in trace.name)  
-            # 👆 only show the histogram traces in the first panel's legend
+            # ^ only show the histogram traces in the first panel's legend
             fig.add_trace(trace, row=i+1, col=1)
 
     # Update layout: single horizontal legend below all panels
@@ -101,22 +104,27 @@ def event_duration_hist_multi(dfs, historical_period, future_period, titles=None
     return go.FigureWidget(fig)
 
 
-def event_seasonality_kde_multi(datasets, titles=None):
+def event_seasonality_kde_multi(dfs, historical_period, future_period, titles=None):
     """
     Multi-panel polar KDE plots for event seasonality.
 
     Parameters
     ----------
-    datasets : list
-        List of xarray datasets [climate_days, energy_days, compound_days].
+    dfs : list
+        List of xarray dfs [climate_days, energy_days, compound_days].
     titles : list of str, optional
         Titles for each subplot. Defaults to ["Climate events", "Energy events", "Compound events"].
     """
 
-
-    # TODO: Add period selection 
+    # Filter period 
+    if (len(historical_period)) > 0 & (len(future_period) > 0):
+        for df in dfs:
+            df["year"] = df.time.dt.year
+            cond1 = (df.year >= historical_period[0]) & (df.year <= historical_period[1])
+            cond2 = (df.year >= future_period[0]) & (df.year <= future_period[1])
+            df = df.where(cond1 | cond2, drop = True)
     
-    n = len(datasets)
+    n = len(dfs)
     if titles is None:
         titles = ["Climate events", "Energy events", "Compound events"][:n]
 
@@ -127,7 +135,7 @@ def event_seasonality_kde_multi(datasets, titles=None):
         specs=[[{"type": "polar"}] * n]
     )
 
-    for i, d in enumerate(datasets):
+    for i, d in enumerate(dfs):
         d["doy"] = d.time.dt.dayofyear
 
         # TODO : Call the individual function here!!

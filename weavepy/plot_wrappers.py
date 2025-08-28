@@ -127,7 +127,7 @@ def event_count_barplot_multi(dfs, historical_period, future_period, titles=["Cl
 
     return go.FigureWidget(fig)
     
-def event_duration_hist_multi(dfs, historical_period, future_period, titles=None):
+def event_duration_hist_multi(dfs, historical_period, future_period, titles=["Climate events", "Energy events", "Compound events"]):
     """
     Create a vertical multi-panel histogram figure across multiple dfs.
     Each panel shows duration histograms for scenarios with mean lines.
@@ -135,10 +135,13 @@ def event_duration_hist_multi(dfs, historical_period, future_period, titles=None
 
     # Filter period 
     if (len(historical_period)) > 0 & (len(future_period) > 0):
-        for df in dfs:
-            df = df[df.year.between(*historical_period) | df.year.between(*future_period)]
+        for i in range(len(dfs)):   
+        #for df in dfs:
+            dfs[i] = dfs[i][dfs[i].year.between(*historical_period) | dfs[i].year.between(*future_period)]
     
+    # Manage input
     n = len(dfs)
+    assert (titles is None) | (len(titles) == n), "titles must be None or have the same length as dfs"
     if titles is None:
         titles = [f"Dataset {i+1}" for i in range(n)]
 

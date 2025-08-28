@@ -14,6 +14,12 @@ if host.endswith('bullx'):
     BDD_PATH = Path('/perm/gbr6848/')
     CACHE_DATA_PATH = Path('/ec/res4/scratch/'+username)
 
+# --- ECMWF JupyterHub Clément ---
+if host.startswith('jupyter'):
+    BDD_VERSION = 4.2
+    BDD_PATH = Path(f'/home/{username}/scratch')
+    CACHE_DATA_PATH = Path(f'/home/{username}/scratch/cache')
+
 # --- IPSL Mesocenter: Spirit ---
 elif host.startswith("spirit"):
     #LOCAL PATHS

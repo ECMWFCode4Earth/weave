@@ -10,9 +10,9 @@ username = getpass.getuser()
 
 # --- ECMWF JupyterHub ---
 if host.endswith('bullx'):
-    BDD_VERSION = 42
+    BDD_VERSION = 4.2
     BDD_PATH = Path('/perm/gbr6848/')
-    CACHE_DATA_PATH = Path('/ec/res4/scratch/'+username+'/')
+    CACHE_DATA_PATH = Path('/ec/res4/scratch/'+username)
 
 # --- IPSL Mesocenter: Spirit ---
 elif host.startswith("spirit"):

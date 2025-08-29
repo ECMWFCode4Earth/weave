@@ -35,6 +35,8 @@ You can then save the figures as desired.
 
 **Disclamer:** The processing time can vary greatly depending on the existance or not of cached data corresponding to your selection. It is not unusual for it to run for about 10 minutes before displaying the results. The long process involves the time aggregation of climate and energy variables, as well as country extraction.
 
+**NB**: By default, the aggregation will be performed over the entire data. It is in particular to be noted for Solar Photovoltaic variables, that are going to be averaged without taking into account day/night times. 
+
 **Here is a description of the selectable parameters:**
 - Climate Variable: The climate parameter you want to study
 - Energy Variable: The energy parameter you want to study

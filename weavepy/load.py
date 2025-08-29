@@ -4,7 +4,7 @@ import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
 
-from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS_DICT
+from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS_TECHNOS
 
 def define_cache_path(bdd_version, var, techno, aggregation_frequency, aggregation_function, country):
     return CACHE_DATA_PATH.joinpath(f"PECD{str(bdd_version)}/{var}_{techno}_{aggregation_frequency}-{aggregation_function}_{country}_PECD{str(bdd_version)}.nc")
@@ -34,7 +34,7 @@ def load_vars(vars: list, bdd_version: float = 4.2,
             if verbose: print(f'|_Variable n°{j+1}/{len(vars)} ({var})')
 
             data_per_techno = {}
-            subset_technos = [t for t in technos if (var in ENER_VARS_DICT)&(t!='NA')] or ['NA']
+            subset_technos = [t for t in technos if (t in ENER_VARS_TECHNOS[var])] if var in ENER_VARS_TECHNOS else ['NA']
             for k,techno in enumerate(subset_technos):
                 if verbose: print(f'|__Techno n°{k+1}/{len(subset_technos)} ({techno})')
 
@@ -65,14 +65,6 @@ def load_vars(vars: list, bdd_version: float = 4.2,
 
     # combine everything together
     return xr.merge(data.values())
-
-#PECD4.1
-#PECD4.1/2m_temperature/future/cmcc_cm2_sr5
-#P_CMI6_CMCC_CMR5_TA-_0002m_Pecd_NUT0_S201501010000_E201512312300_INS_TIM_01h_NA-_cdf_org_NA_SP245_NA---_NA---_PECD4.1_fv1.csv (len22)
-
-#PECD4.2
-#PECD4.2/NUTS0/PROJ/ENER/ECE3/SP126/SPV/NUT0
-#P_CMI6_ECEC_ECE3_SPV_0000m_Pecd_NUT0_S201501010000_E201512312300_CFR_TIM_01h_NA-_noc_org_60_SP126_NA---_PhM03_PECD4.2_fv1.csv (len22)
 
 def get_data(variable: str, bdd_version: float = 4.2, 
              countries: list = ["FR"], technos: list = ["NA", "60"], models: list = [], scenarios: list = [], # Filters
@@ -118,14 +110,16 @@ def get_data(variable: str, bdd_version: float = 4.2,
         meta = meta[meta.scenario.isin(scenarios)]
         if verbose : print("After filtering scenarios", len(meta))
     
-    #if verbose : print(len(meta))
-
     #Loading
     #NB: This is long
     records = []
     for _, row in tqdm(meta.iterrows()):
-        df = pd.read_csv(row['path'], sep=',', comment='#',
+        try:
+            df = pd.read_csv(row['path'], sep=',', comment='#',
                          usecols = None if len(countries)==0 else lambda col: col == "Date" or any(col.startswith(country) for country in countries))
+        except Exception as e:
+            print(f"Error reading {row['path']}: {e}")
+            continue
         df['Date'] = dd.to_datetime(df['Date'])
         # - Aggregation step -
         df = df.resample(aggregation_frequency, on = "Date").agg(aggregation_function).reset_index()

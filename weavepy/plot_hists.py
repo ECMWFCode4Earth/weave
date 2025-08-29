@@ -1,4 +1,4 @@
-from .plot_utils import scenario_colors, model_linestyles, vonmises_kde, _rgb_to_rgba
+from .plot_utils import scenario_colors, model_linestyles, vonmises_kde, _rgb_to_rgba, doy_first_day_month
 from .events import count_events
 import plotly.graph_objects as go
 
@@ -79,51 +79,42 @@ def event_count_barplot(df):
 
 def event_duration_hist(e, logy=False):
     """
-    Plot histogram of event durations by scenario.
-
-    Features:
-      - Bins start at 1 day.
-      - Hover on bars shows integer days (with scenario).
-      - Left edge is solid (step histogram includes it).
-      - Mean line shows value on hover anywhere along it.
-      - Percent y-axis, optional log-scale.
-      - "historical" scenario always plotted first.
+    Plot histogram of event durations per scenario.
+    - Step histogram (proportion)
+    - Semi-transparent fill
+    - Vertical mean line spanning full y-axis
+    - Hover shows scenario, duration, and mean
+    - Optional log-scale y-axis
     """
-    
-    ## 0. Computations
-    # Convert durations to days
+    # 0. Convert durations to days
+    e = e.copy()  # avoid SettingWithCopyWarning
     e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
+
+    # Determine bins starting at 1 day
+    max_day = e["duration_days"].quantile(0.95) + 1
+    bins = np.arange(1, max_day + 1, 1)
+
     fig = go.Figure()
-    
-    # Define bins: 0.5–1.5 → "1 day", etc.
-    max_day = int(e["duration_days"].quantile(0.95)) + 1
-    bins = np.arange(0.5, max_day + 1.5, 1)
 
-    # Ensure "historical" comes first if present
-    scenarios = list(e.scenario.unique())
-    if "historical" in scenarios:
-        scenarios = ["historical"] + [s for s in scenarios if s != "historical"]
+    # Sort scenarios: historical first
+    scenarios_sorted = sorted(e.scenario.unique(), key=lambda x: (x != "historical", x))
 
-    for scenario in scenarios:
+    for scenario in scenarios_sorted:
         dur = e.loc[e.scenario == scenario, "duration_days"].dropna().values
-        counts, edges = np.histogram(dur, bins=bins)
-        if counts.sum() == 0:
+        if len(dur) == 0:
             continue
-        
-        # Normalize to proportions
+
+        counts, edges = np.histogram(dur, bins=bins)
         counts_prop = counts / counts.sum()
 
-        # Build step histogram INCLUDING left edge
-        x_step = np.repeat(edges, 2)
-        y_step = np.r_[0, np.repeat(counts_prop, 2), 0]  # starts/ends at 0
-
-        # Hover: map each bin center → integer days
-        days = np.arange(1, len(counts_prop)+1)
-        custom_days = np.r_[ [days[0]], np.repeat(days, 2), [days[-1]] ]
+        # Step coordinates
+        x_step = np.repeat(edges, 2)[1:-1]
+        y_step = np.repeat(counts_prop, 2)
 
         base_color = scenario_colors[scenario]
         fill_color = _rgb_to_rgba(base_color, 0.15)
 
+        # 1. Histogram step trace
         fig.add_trace(go.Scatter(
             x=x_step,
             y=y_step,
@@ -136,52 +127,46 @@ def event_duration_hist(e, logy=False):
             showlegend=True,
             hovertemplate=(
                 f"Scenario: {scenario}<br>"
-                + "Duration: %{customdata} day(s)<br>"
-                + "Proportion: %{y:.2%}<extra></extra>"
-            ),
-            customdata=custom_days
+                "Duration: %{x:.0f} days<br>"
+                "Proportion: %{y:.3%}<extra></extra>"
+            )
         ))
-
-        # Mean vertical line with hover anywhere
+        
+        # 2. Mean vertical line that spans the histogram
         mean_val = dur.mean()
-        ymax = y_step.max()
-        y_line = np.linspace(0, ymax, 50)  # 50 points along the line
-        x_line = np.full_like(y_line, mean_val)
-        hover_text = [f"{scenario} mean: {mean_val:.2f} days"] * len(y_line)
-
+        ymax = y_step.max()  # max proportion in histogram
         fig.add_trace(go.Scatter(
-            x=x_line,
-            y=y_line,
+            x=[mean_val, mean_val],
+            y=[0, ymax],
             mode="lines",
             line=dict(color=base_color, width=2, dash="dash"),
             legendgroup=scenario,
             showlegend=True,
             name=f"{scenario} mean",
-            text=hover_text,
-            hoverinfo="text"
+            hovertemplate=f"{scenario} mean: {mean_val:.2f} days<extra></extra>"
         ))
-
-    # 3. Layout
+    # Layout
     fig.update_layout(
         xaxis_title="Duration (days)",
         yaxis_title="Proportion",
-        yaxis=dict(
-            tickformat=".0%",
-            type="log" if logy else "linear"
-        ),
-        template="simple_white"
+        yaxis_type="log" if logy else "linear",
+        template="simple_white",
+        legend=dict(groupclick="togglegroup")
     )
-    
-    return fig
+
+    # Optionally format y-axis as percent
+    fig.update_yaxes(tickformat=".0%")
+
+    return fig   
 def event_seasonality_kde(d): 
 
+    fig = go.Figure()
+    scenarios_sorted = sorted(np.unique(d.scenario), key=lambda x: (x != "historical", x))
+    
     ## 0. Computations
     # Compute days of year
     d["doy"] = d.time.dt.dayofyear
-    
-    fig = go.Figure()
-    
-    for scenario in np.unique(d.scenario):
+    for scenario in scenarios_sorted:
         d_scenario = d.sel(scenario = scenario)
         # Compute multi-model mean kde for this scenario
         L = []
@@ -193,7 +178,7 @@ def event_seasonality_kde(d):
         theta, r = L[0][0]* 180/np.pi, np.array(L)[:,1].mean(axis = 0)
 
         # 1. Plot multi-model mean kde
-        theta_doy = (theta / 360) * 365
+        theta_doy = (theta%360 / 360) * 365
         fig.add_trace(
             go.Scatterpolar(
                 r = r,
@@ -210,15 +195,19 @@ def event_seasonality_kde(d):
     month_starts = np.array(doy_first_day_month) * 360 / 365  # convert DOY → degrees
     month_labels = list("JFMAMJJASOND")
     fig.update_layout(
-        title = 'Climate events',
         showlegend = True, 
         polar=dict(
             angularaxis=dict(
                 tickmode="array",
                 tickvals=month_starts,
                 ticktext=month_labels,
+                rotation = 90,
+                direction="clockwise",
+            ),
+            radialaxis=dict(
+                showticklabels=False  # This hides the radial tick labels
             )
         )
     )
-    
+
     return fig

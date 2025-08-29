@@ -127,10 +127,7 @@ def event_count_barplot_multi(dfs, historical_period, future_period, titles=["Cl
 
     return go.FigureWidget(fig)
 
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-
-def event_duration_hist_multi(dfs, historical_period, future_period,
+def event_duration_hist_multi(dfs, historical_period, future_period, logy=False,
                               titles=["Climate events", "Energy events", "Compound events"]):
     """
     Multi-panel histogram across multiple datasets.
@@ -158,7 +155,7 @@ def event_duration_hist_multi(dfs, historical_period, future_period,
     )
 
     for i, df in enumerate(dfs):
-        subfig = event_duration_hist(df)
+        subfig = event_duration_hist(df, logy=logy)
         # Sort scenarios so historical is first
         scenarios_sorted = sorted(df.scenario.unique(), key=lambda x: (x != "historical", x))
         
@@ -233,47 +230,26 @@ def event_seasonality_kde_multi(dfs, historical_period, future_period, titles=No
     )
 
     for i, d in enumerate(dfs):
-        d["doy"] = d.time.dt.dayofyear
+        subfig = event_seasonality_kde(d)
+        for trace in subfig.data:
+            trace.legendgroup = trace.name  # Use trace name as the group identifier
+            # Only show legend in first panel
+            trace.showlegend = (i == 0 and trace.showlegend)
+            fig.add_trace(trace, row=1, col=i+1)
 
-        # TODO : Call the individual function here!!
-        for scenario in np.unique(d.scenario):
-            d_scenario = d.sel(scenario=scenario)
-            # Multi-model mean KDE
-            L = []
-            for m in np.unique(d_scenario.model):
-                d_m = d_scenario.sel(model=m)
-                doys4kde = d_m.doy.where(d_m, drop=True).values
-                if len(doys4kde) > 0:
-                    L.append(vonmises_kde(doys4kde * 2 * np.pi / 365, 180))
-            if not L:
-                continue
-            theta_deg = L[0][0] * 180/np.pi
-            r = np.array(L)[:,1].mean(axis=0)
-            theta_doy = (theta_deg / 360) * 365  # for hover
-
-            fig.add_trace(
-                go.Scatterpolar(
-                    r=r,
-                    theta=theta_deg,
-                    mode="lines",
-                    name=scenario,
-                    line_color=scenario_colors[scenario],
-                    legendgroup=scenario,
-                    showlegend=(i == 0),  # legend only in first subplot
-                    hovertemplate="DOY: %{customdata:.0f}<br>Density: %{r:.3f}<extra></extra>",
-                    customdata=theta_doy
-                ),
-                row=1, col=i+1
-            )
-
-        # Month labels as xticks
+        # axes layout
         fig.update_polars(
             angularaxis=dict(
                 tickmode="array",
                 tickvals=(np.array(doy_first_day_month) * 360/365).tolist(),
-                ticktext=list("JFMAMJJASOND")
+                ticktext=list("JFMAMJJASOND"),
+                rotation = 90,
+                direction = "clockwise",
             ),
-            radialaxis=dict(showticklabels=False, ticks="")
+            radialaxis=dict(
+                showticklabels=False, 
+                ticks="", 
+            )
         )
 
     # Layout adjustments
@@ -286,8 +262,6 @@ def event_seasonality_kde_multi(dfs, historical_period, future_period, titles=No
             xanchor="center",
             x=0.5
         ),
-        height=500,
-        width=750
     )
 
     return go.FigureWidget(fig)

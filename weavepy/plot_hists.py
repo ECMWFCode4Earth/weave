@@ -77,27 +77,53 @@ def event_count_barplot(df):
     )
     return fig
 
-def event_duration_hist(e):
+def event_duration_hist(e, logy=False):
+    """
+    Plot histogram of event durations by scenario.
+
+    Features:
+      - Bins start at 1 day.
+      - Hover on bars shows integer days (with scenario).
+      - Left edge is solid (step histogram includes it).
+      - Mean line shows value on hover anywhere along it.
+      - Percent y-axis, optional log-scale.
+      - "historical" scenario always plotted first.
+    """
     
     ## 0. Computations
     # Convert durations to days
     e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
     fig = go.Figure()
-    bins = np.arange(0.5, 30, 1)  
+    
+    # Define bins: 0.5–1.5 → "1 day", etc.
+    max_day = int(e["duration_days"].quantile(0.95)) + 1
+    bins = np.arange(0.5, max_day + 1.5, 1)
 
-    for scenario in e.scenario.unique():
+    # Ensure "historical" comes first if present
+    scenarios = list(e.scenario.unique())
+    if "historical" in scenarios:
+        scenarios = ["historical"] + [s for s in scenarios if s != "historical"]
+
+    for scenario in scenarios:
         dur = e.loc[e.scenario == scenario, "duration_days"].dropna().values
         counts, edges = np.histogram(dur, bins=bins)
         if counts.sum() == 0:
             continue
+        
+        # Normalize to proportions
         counts_prop = counts / counts.sum()
-        x_step = np.repeat(edges, 2)[1:-1]
-        y_step = np.repeat(counts_prop, 2)
-    
+
+        # Build step histogram INCLUDING left edge
+        x_step = np.repeat(edges, 2)
+        y_step = np.r_[0, np.repeat(counts_prop, 2), 0]  # starts/ends at 0
+
+        # Hover: map each bin center → integer days
+        days = np.arange(1, len(counts_prop)+1)
+        custom_days = np.r_[ [days[0]], np.repeat(days, 2), [days[-1]] ]
+
         base_color = scenario_colors[scenario]
         fill_color = _rgb_to_rgba(base_color, 0.15)
-    
-        # 1. Histogram step + fill
+
         fig.add_trace(go.Scatter(
             x=x_step,
             y=y_step,
@@ -106,32 +132,47 @@ def event_duration_hist(e):
             fill="tozeroy",
             fillcolor=fill_color,
             name=scenario,
-            legendgroup=scenario,       # group with mean line
-            showlegend=True,            # only this one shows in legend
-            hovertemplate="%{x}<br>proportion: %{y:.3f}<extra></extra>"
+            legendgroup=scenario,
+            showlegend=True,
+            hovertemplate=(
+                f"Scenario: {scenario}<br>"
+                + "Duration: %{customdata} day(s)<br>"
+                + "Proportion: %{y:.2%}<extra></extra>"
+            ),
+            customdata=custom_days
         ))
-    
-        # 2. Mean vertical line
+
+        # Mean vertical line with hover anywhere
         mean_val = dur.mean()
+        ymax = y_step.max()
+        y_line = np.linspace(0, ymax, 50)  # 50 points along the line
+        x_line = np.full_like(y_line, mean_val)
+        hover_text = [f"{scenario} mean: {mean_val:.2f} days"] * len(y_line)
+
         fig.add_trace(go.Scatter(
-            x=[mean_val, mean_val],
-            y=[0, max(y_step)],
+            x=x_line,
+            y=y_line,
             mode="lines",
             line=dict(color=base_color, width=2, dash="dash"),
-            legendgroup=scenario,       # same group as histogram
-            showlegend=True,            # hidden from legend
-            name = scenario + " mean"
+            legendgroup=scenario,
+            showlegend=True,
+            name=f"{scenario} mean",
+            text=hover_text,
+            hoverinfo="text"
         ))
 
     # 3. Layout
     fig.update_layout(
-        #template = "simple_white",
-        xaxis_title = "Duration (days)",
-        yaxis_title = "Proportion"
+        xaxis_title="Duration (days)",
+        yaxis_title="Proportion",
+        yaxis=dict(
+            tickformat=".0%",
+            type="log" if logy else "linear"
+        ),
+        template="simple_white"
     )
-
+    
     return fig
-
 def event_seasonality_kde(d): 
 
     ## 0. Computations
@@ -176,12 +217,8 @@ def event_seasonality_kde(d):
                 tickmode="array",
                 tickvals=month_starts,
                 ticktext=month_labels,
-                #direction="clockwise",    # optional: match your matplotlib convention
-                #rotation=90               # optional: set where "Jan" starts
             )
         )
     )
-
-    # TODO : Mettre les mois dans le sens anti-trigo
     
     return fig

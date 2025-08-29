@@ -9,6 +9,7 @@ dependencies:
   - pandas
   - netcdf4
   - xarray
+  - dask
   - matplotlib
   - seaborn
   - cartopy

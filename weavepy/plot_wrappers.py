@@ -126,58 +126,77 @@ def event_count_barplot_multi(dfs, historical_period, future_period, titles=["Cl
     )
 
     return go.FigureWidget(fig)
-    
-def event_duration_hist_multi(dfs, historical_period, future_period, titles=["Climate events", "Energy events", "Compound events"]):
+
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
+def event_duration_hist_multi(dfs, historical_period, future_period,
+                              titles=["Climate events", "Energy events", "Compound events"]):
     """
-    Create a vertical multi-panel histogram figure across multiple dfs.
-    Each panel shows duration histograms for scenarios with mean lines.
+    Multi-panel histogram across multiple datasets.
+    - One column per scenario in the legend (shading + mean line stacked)
+    - Legend below the panels
+    - Historical scenario always first
     """
 
-    # Filter period 
-    if (len(historical_period)) > 0 & (len(future_period) > 0):
-        for i in range(len(dfs)):   
-        #for df in dfs:
-            dfs[i] = dfs[i][dfs[i].year.between(*historical_period) | dfs[i].year.between(*future_period)]
-    
-    # Manage input
+    # Filter period
+    if (len(historical_period) > 0) & (len(future_period) > 0):
+        for i in range(len(dfs)):
+            dfs[i] = dfs[i][dfs[i].year.between(*historical_period) |
+                            dfs[i].year.between(*future_period)].copy()
+
     n = len(dfs)
-    assert (titles is None) | (len(titles) == n), "titles must be None or have the same length as dfs"
     if titles is None:
         titles = [f"Dataset {i+1}" for i in range(n)]
 
-    # Create subplots
+    # Subplots, vertical stacking
     fig = make_subplots(
         rows=n, cols=1,
         subplot_titles=titles,
-        shared_xaxes=True
+        shared_xaxes=True,
+        vertical_spacing=0.05
     )
 
     for i, df in enumerate(dfs):
         subfig = event_duration_hist(df)
+        # Sort scenarios so historical is first
+        scenarios_sorted = sorted(df.scenario.unique(), key=lambda x: (x != "historical", x))
+        
         for trace in subfig.data:
-            # Link legend items across panels
-            trace.legendgroup = trace.name.split()[0]  # base scenario name
-            trace.showlegend = (i == 0) and ("mean" not in trace.name)  
-            # ^ only show the histogram traces in the first panel's legend
+            # Base scenario name (for grouping)
+            scenario_name = trace.name.split()[0]
+            trace.legendgroup = scenario_name  # group shading + mean line
+            trace.showlegend = (i == 0)  # only show in first panel
+            # Use legendrank to stack shading above mean line
+            # shading comes first in event_duration_hist
+            rank = scenarios_sorted.index(scenario_name)
+            if "mean" in trace.name.lower():
+                trace.legendrank = rank + 0.5  # mean below shading
+            else:
+                trace.legendrank = rank
             fig.add_trace(trace, row=i+1, col=1)
 
-    # Update layout: single horizontal legend below all panels
     fig.update_layout(
-        height=350*n + 100,
+        height=300*n,
         showlegend=True,
         legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.15,
-            xanchor="center",
-            x=0.5,
+            orientation="v",      # vertical legend
+            y=0.5,                  # top of the plot
+            x=1.02,               # slightly outside the plot on the right
+            xanchor="left",       # left side of legend aligns to x
+            yanchor="middle",        # top of legend aligns to y
+            itemsizing="constant",
+            itemwidth=40,         # keeps the width for each item
             traceorder="normal",
-            itemsizing="constant"
-        ),
-        title_text="Event Duration",
-        xaxis_title="Duration (days)",
-        yaxis_title="Proportion"
+            groupclick="togglegroup"
+        )
     )
+
+    
+    # Axis titles
+    for i in range(n):
+        fig.update_yaxes(title_text="Proportion", row=i+1, col=1, tickformat=".0%")
+    fig.update_xaxes(title_text="Duration (days)", row=n, col=1)
 
     return go.FigureWidget(fig)
 

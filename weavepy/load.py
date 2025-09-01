@@ -4,7 +4,8 @@ import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
 
-from config import BDD_PATH, CACHE_DATA_PATH, ENER_VARS_TECHNOS
+from config import BDD_PATH, CACHE_DATA_PATH
+from .bdd_parameters import ENER_VARS_TECHNOS
 
 def define_cache_path(bdd_version, var, techno, aggregation_frequency, aggregation_function, country):
     return CACHE_DATA_PATH.joinpath(f"PECD{str(bdd_version)}/{var}_{techno}_{aggregation_frequency}-{aggregation_function}_{country}_PECD{str(bdd_version)}.nc")

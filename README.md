@@ -72,4 +72,7 @@ We use plotly to display the figures, which allows user interactions with the pl
 ## Notes on the WeavePy back-end package
 All the functions underpinning the WEAVE visualisation platform are stored in a package named `weavepy`.
 
-# Understand WEAVE's visualisations
+# What's next for WEAVE
+1. A few improvements in the vizualisations are planned;
+2. We would like to make the platform available on ECMWF's ecosystem, and on Climat Clément's website;
+3. After this, maintenance and updates (including support of future PECD versions) will be subject to continued developers' funding and/or recruitment of new contributors.

@@ -40,5 +40,5 @@ __all__ = [
     "get_period_length", "get_period_min_max",
     "CLIM_VARS", "ENER_VARS", "CLIM_VARS_DICT", "ENER_VARS_DICT", "ENER_VARS_TECHNOS",
     "FREQUENCIES_DICT", "MODEL_NAMES", "SCENARIOS", "COUNTRIES_LIST", "COUNTRIES_DICT",
-    "model_aliases", "BDD_VERSION",
+    "BDD_VERSION",
 ]

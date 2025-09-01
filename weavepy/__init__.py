@@ -9,7 +9,6 @@ import xarray as xr
 
 # Plots
 import matplotlib.pyplot as plt
-#import cartopy.crs as ccrs
 import seaborn as sns
 
 # Interface

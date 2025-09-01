@@ -11,7 +11,7 @@ from .plot_wrappers import (
     event_duration_hist_multi,
     event_seasonality_kde_multi,
 )
-from .utils import get_period_length, get_period_min_max
+#from .utils import get_period_length, get_period_min_max
 
 # BDD parameters
 from .bdd_parameters import (
@@ -37,7 +37,7 @@ __all__ = [
     "get_data", "load_vars", "identify_pb_days", "identify_events_whole_base",
     "count_events", "nb_event_timeseries_multi", "event_count_barplot_multi",
     "event_duration_hist_multi", "event_seasonality_kde_multi",
-    "get_period_length", "get_period_min_max",
+    #"get_period_length", "get_period_min_max",
     "CLIM_VARS", "ENER_VARS", "CLIM_VARS_DICT", "ENER_VARS_DICT", "ENER_VARS_TECHNOS",
     "FREQUENCIES_DICT", "MODEL_NAMES", "SCENARIOS", "COUNTRIES_LIST", "COUNTRIES_DICT",
     "BDD_VERSION",

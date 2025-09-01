@@ -23,3 +23,4 @@ from .utils import get_period_length, get_period_min_max
 
 config_dir = os.path.abspath("../")
 sys.path.append(config_dir)
+from config import BDD_VERSION

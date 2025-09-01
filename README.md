@@ -14,12 +14,18 @@ WEAVE is designed to study compound climate-energy events that put the electrici
 The user defines problem days based on a threshold on a variable, and problematic events are defined as a continuous series of problem days. 
 For example, times when the temperature is cold (corresponding to high heating demand) and renewable energy production is low, threaten the demand-supply balance. 
 
+There are two notebooks for two different levels of usage: 
+* The "Easy" notebook is meant for fast, no-code analysis of daily mean data over one country;
+* The "Expert" notebook allows more flexibility but requires heavier data a small amount of code. 
+
 # How to use WEAVE?
 ## Download the repository and the data
 ### On your own laptop
 1. Download or clone the present repository.
 2. Make sure you work in an environment where all the packages listed in `environment.yml` are installed.
-3. Download the [data archive](TODO: Provide link), and unzip it in the folder of your choice.
+3. Download the data archive, and unzip it in the folder of your choice.
+   * If you only need daily mean data, download the pre-processed archive HERE [TODO]
+   * If you need other aggregations, download the full NUTS0 PECD4.2 archive HERE [TODO].
 4. Setup config.py
 
 ### On the [ECMWF JupyterHub](jupyterhub.ecmwf.int/)
@@ -28,14 +34,15 @@ For example, times when the temperature is cold (corresponding to high heating d
 
 ## Use the "Easy" interactive notebook
 The `easy.ipynb` notebook is an interactive notebook meant for direct and easy use. It allows for the comparison of events concerning one climate and one energy variable, for one country and one technology. 
+
 Open it in your Jupyter environment, and run its only cell (you can hide it for later). An interactive interface will appear, allowing you to select your parameters with interactive buttons and generate the figures automatically.
 Once your selection is complete, click the "Execute" button to process the data.
 After changing your selection, click "Execute" for the program to reprocess the data.
 You can then save the figures as desired.
 
-**Disclamer:** The processing time can vary greatly depending on the existance or not of cached data corresponding to your selection. It is not unusual for it to run for about 10 minutes before displaying the results. The long process involves the time aggregation of climate and energy variables, as well as country extraction.
+**Disclaimer:** The processing time can vary greatly depending on the existence or non-existence of cached data corresponding to your selection. It is not unusual for it to run for about 10 minutes before displaying the results if the data is not already in cache. The long process involves the time aggregation of climate and energy variables, as well as country extraction.
 
-**NB**: By default, the aggregation will be performed over the entire data. It is in particular to be noted for Solar Photovoltaic variables, that are going to be averaged without taking into account day/night times. 
+**NB**: By default, the aggregation will be performed over the entire data. It is in particular to be noted for Solar PhotoVoltaic (SPV) variables, that are going to be averaged without taking into account day/night times. 
 
 **Here is a description of the selectable parameters:**
 - Climate Variable: The climate parameter you want to study

@@ -25,19 +25,13 @@ from .bdd_parameters import (
     SCENARIOS,
     COUNTRIES_LIST,
     COUNTRIES_DICT,
-    model_aliases,
 )
-
 
 # Robust config import from parent directory
 config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if config_dir not in sys.path:
     sys.path.insert(0, config_dir)
 from config import BDD_VERSION
-
-#config_dir = os.path.abspath("../")
-#sys.path.append(config_dir)
-#from config import BDD_VERSION
 
 __all__ = [
     "get_data", "load_vars", "identify_pb_days", "identify_events_whole_base",

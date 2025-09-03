@@ -1,10 +1,13 @@
 """
 Module for loading functions
+Functions:
+    - define_cache_path: Constructs the cache file path where preprocessed data is stored.
+    - get_data: gets the raw data from PECD CSV files, and computes the required aggregations (e.g. daily mean).
+    - load_vars: Main function that calls the other 2. Takes lists of variables, countries, etc. as input. Checks if the relevant cache file exists, and if not, calls get_data to create it. Concatenates all data into a single xarray Dataset.
 """
 
 import os
 import pandas as pd
-import dask.dataframe as dd
 from tqdm import tqdm
 import xarray as xr
 
@@ -13,7 +16,10 @@ from .bdd_parameters import ENER_VARS_TECHNOS
 
 def define_cache_path(bdd_version, var, techno, aggregation_frequency, aggregation_function, country):
     """
-    Construct the cache file path for NetCDF data.
+    Constructs the cache file path for NetCDF data.
+    Root directory is defined in config.py as CACHE_DATA_PATH. The BDD version is added as a subfolder.
+    The filename includes the variable, techno, aggregation frequency and function, country, and BDD version.
+    OUTPUT: Path object
     """
     bdd_version_str = str(bdd_version)
     return CACHE_DATA_PATH.joinpath(
@@ -25,9 +31,13 @@ def load_vars(vars: list, bdd_version: float = 4.2,
               aggregation_frequency: str = "D", aggregation_function: str = "mean",
               verbose: bool = False) -> xr.Dataset:
     """
-    Load PECD4.2 data for specified variables, countries, technos, models, and scenarios,
-    using time aggregation and a cache system. If the cached file does not exist, it is generated.
+    Loads PECD data from cache or through the function get_data() for all specified variables, countries, technos, models, and scenarios.
+    If the cached file did not pre-exist, it is created and saved.
+    All the data is merged into a single xarray Dataset and returned.
+    OUTPUT: xarray Dataset
     """
+
+    # Default parameters in not passed
     countries = countries if countries is not None else ["FR"]
     technos = technos if technos is not None else ["NA", "60"]
     models = models if models is not None else []
@@ -40,6 +50,9 @@ def load_vars(vars: list, bdd_version: float = 4.2,
 
     data = {}
 
+    # Loop over countries, variables, technos
+    # The cache is build with one nc file per country variable techno-aggregation frequency and method (e.g. SPV_60_D-mean_FR_PECD4.2.nc)
+    # That’s why there are 3 nested loops
     for i, country in enumerate(countries):
         if verbose:
             print(f'Loading country {i+1}/{len(countries)} ({country})')
@@ -67,6 +80,7 @@ def load_vars(vars: list, bdd_version: float = 4.2,
                     if verbose:
                         print(f"|__ > File exists, loading from cache: {nc_file_path}")
                     data_per_techno[techno] = xr.open_dataset(nc_file_path)
+                # Otherwise, load from source using get_data() and save to cache
                 else:
                     if verbose:
                         print(f"|__ > File not found, loading from source. Estimated processing time = 1 minute.")
@@ -91,13 +105,19 @@ def get_data(variable: str, bdd_version: float = 4.2,
              aggregation_frequency: str = "D", aggregation_function: str = "mean",
              verbose: bool = False) -> xr.Dataset:
     """
-    Read data for one variable from the database and process according to filters.
+    Reads raw data for one variable from the database (PECD hourly CSV files) and process according to filters.
+    This function include a memory-intensive step (pivot_table) and can be slow, therefore it is recommended to call it for one country and one techno at a time.
+    Generally, it is recommended to use load_vars() instead, which calls this function for each variable and handles caching.
+    OUTPUT: xarray Dataset
     """
+
+    # Default parameters in not passed
     countries = countries if countries is not None else ["FR"]
     technos = technos if technos is not None else ["NA", "60"]
     models = models if models is not None else []
     scenarios = scenarios if scenarios is not None else []
 
+    #Paths from config
     bdd_version_str = str(bdd_version)
     data_path = BDD_PATH.joinpath(f'PECD{bdd_version_str}')
 
@@ -106,6 +126,7 @@ def get_data(variable: str, bdd_version: float = 4.2,
     if not all_files:
         raise FileNotFoundError(f"No matching CSV files found for variable '{variable}' in {data_path}")
 
+    # Create a DataFrame to hold request metadata
     meta = pd.DataFrame({
         'path': all_files,
         'basename': [os.path.basename(f) for f in all_files],
@@ -135,6 +156,7 @@ def get_data(variable: str, bdd_version: float = 4.2,
         if verbose:
             print(f"After filtering scenarios: {len(meta)}")
 
+    #Loading and processing the CSV files
     records = []
     for _, row in tqdm(meta.iterrows(), total=len(meta), desc="Loading CSVs"):
         try:
@@ -144,7 +166,7 @@ def get_data(variable: str, bdd_version: float = 4.2,
         except Exception as e:
             print(f"Error reading {row['path']}: {e}")
             continue
-        df['Date'] = dd.to_datetime(df['Date'])
+        df['Date'] = pd.to_datetime(df['Date'])
         df = df.resample(aggregation_frequency, on="Date").agg(aggregation_function).reset_index()
         df_long = df.melt(id_vars='Date', var_name='country', value_name=variable)
         df_long['model'] = row['model']
@@ -156,12 +178,14 @@ def get_data(variable: str, bdd_version: float = 4.2,
         raise ValueError("No data loaded; please check your filters and files.")
 
     df_all = pd.concat(records, ignore_index=True)
+
     if verbose:
         print("|__ > Data loaded. Starting pivot_table")
     df_pivot = df_all.pivot_table(index=['Date', 'country', 'scenario', 'model', 'tech'], values=variable)
 
     if verbose:
         print("|__ > Converting to Xarray Dataset")
+    
     ds = df_pivot.to_xarray().rename({'Date': 'time'})
 
     return ds

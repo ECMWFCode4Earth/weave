@@ -1,5 +1,6 @@
 */.DS_Store
 __pycache__/
+.conda
 *.pyc
 *.csv
 *.ipynb_checkpoints*

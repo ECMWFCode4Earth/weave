@@ -1,22 +1,21 @@
 name: weave
 channels:
-  - conda-forge
-  - defaults
+- conda-forge
+- defaults
 dependencies:
-  - python
-  - cdsapi
-  - numpy
-  - pandas
-  - netcdf4
-  - xarray
-  - dask
-  - matplotlib
-  - seaborn
-  - cartopy
-  - plotly
-  - nbformat
-  - jupyterlab-plotly
-  - anywidget
+- python
+- cdsapi
+- numpy
+- pandas
+- netcdf4
+- xarray
+- matplotlib
+- seaborn
+- cartopy
+- plotly
+- nbformat
+- jupyterlab-plotly
+- anywidget
 
 #importlib? pathlib? socket?
 

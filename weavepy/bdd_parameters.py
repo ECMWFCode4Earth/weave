@@ -1,5 +1,6 @@
 """
 PECD4.2 parameters and global configuration for climate and energy datasets.
+These values are mainly used to build the widgets in easy.ipynb
 """
 
 # Climate and energy variable names

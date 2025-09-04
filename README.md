@@ -22,11 +22,13 @@ There are two notebooks for two different levels of usage:
 ## Download the repository and the data
 ### On your own laptop
 1. Download or clone the present repository.
-2. Make sure you work in an environment where all the packages listed in `environment.yml` are installed.
-3. Download the data archive, and unzip it in the folder of your choice.
-   * If you only need daily mean data, download the pre-processed archive HERE [TODO]
-   * If you need other aggregations, download the full NUTS0 PECD4.2 archive HERE [TODO].
-4. Setup config.py
+2. Make sure you work in a python environment where all the packages listed in `environment.yml` are installed.
+3. Retrieve the data. There are two options: the data archive, and unzip it in the folder of your choice.
+   * If you only need daily mean data for existing technologies, download the pre-processed files using Git Large File Storage (LFS).
+       * [Install Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage)
+       * run `git lfs pull` in the `weave` directory that you have cloned. This will download the cache files in the `data` folder.
+   * If you need other aggregations, download the full NUTS0 PECD4.2 archive (CURRENTLY NOT AVAILABLE!).
+4. Setup config.py.
 
 ### On the [ECMWF JupyterHub](jupyterhub.ecmwf.int/)
 0. If you do not already, obtain an ECMWF account and setup your access to the JupyterHub (may require you to setup ssh parameters if you have HPC access)
@@ -75,4 +77,5 @@ All the functions underpinning the WEAVE visualisation platform are stored in a 
 # What's next for WEAVE
 1. A few improvements in the vizualisations are planned;
 2. We would like to make the platform available on ECMWF's ecosystem, and on Climat Clément's website;
-3. After this, maintenance and updates (including support of future PECD versions) will be subject to continued developers' funding and/or recruitment of new contributors.
+3. Linking up directly to the CDS would be desirable.
+4. After this, maintenance and updates (including support of future PECD versions) will be subject to continued developers' funding and/or recruitment of new contributors.

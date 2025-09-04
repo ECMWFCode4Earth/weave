@@ -63,12 +63,6 @@ Aggregation Frequency: Raw data is hourly; you can aggregate it to daily, monthl
 
 ## Use the "expert" notebook
 
-## About the plotly plots
-We use plotly to display the figures, which allows user interactions with the plots. In particular, you can: 
-* hover over the plot to show the values to the different points/lines/bar;
-* click on legend entries to hide/show the corresponding traces;
-* double-click on legend entries to isolate a given trace.
-
 
 ## Notes on the WeavePy back-end package
 All the functions underpinning the WEAVE visualisation platform are stored in a package named `weavepy`.

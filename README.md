@@ -29,7 +29,7 @@ There are two notebooks for two different levels of usage:
 4. Setup config.py.
 
 ### On the [ECMWF JupyterHub](jupyterhub.ecmwf.int/)
-1.Connect to the [ECMWF JupyterHub](jupyterhub.ecmwf.int/).
+1. Connect to the [ECMWF JupyterHub](jupyterhub.ecmwf.int/).
    * NB: If you have HPC privileges at ECMWF, you may have access to several Jupyter servers. In that case, make sure you connect to the "Data Store Service" one.
 2. Currently, there is nothing specific about it, so follow the procedure above for local computers.
 

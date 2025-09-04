@@ -24,15 +24,14 @@ There are two notebooks for two different levels of usage:
 1. Download or clone the present repository.
 2. Make sure you work in a python environment where all the packages listed in `environment.yml` are installed.
 3. Retrieve the data. There are two options: the data archive, and unzip it in the folder of your choice.
-   * If you only need daily mean data for existing technologies, download the pre-processed files using Git Large File Storage (LFS).
-       * [Install Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage)
-       * run `git lfs pull` in the `weave` directory that you have cloned. This will download the cache files in the `data` folder.
+   * If you only need daily mean data for existing technologies, you can use the pre-processed cached files in the `data` folder.
    * If you need other aggregations, download the full NUTS0 PECD4.2 archive (CURRENTLY NOT AVAILABLE!).
 4. Setup config.py.
 
 ### On the [ECMWF JupyterHub](jupyterhub.ecmwf.int/)
-0. If you do not already, obtain an ECMWF account and setup your access to the JupyterHub (may require you to setup ssh parameters if you have HPC access)
-1. ??
+1.Connect to the [ECMWF JupyterHub](jupyterhub.ecmwf.int/).
+   * NB: If you have HPC privileges at ECMWF, you may have access to several Jupyter servers. In that case, make sure you connect to the "Data Store Service" one.
+2. Currently, there is nothing specific about it, so follow the procedure above for local computers.
 
 ## Use the "Easy" interactive notebook
 The `easy.ipynb` notebook is an interactive notebook meant for direct and easy use. It allows for the comparison of events concerning one climate and one energy variable, for one country and one technology. 

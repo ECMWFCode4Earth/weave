@@ -22,6 +22,7 @@ import warnings  # Added for proper warning reporting
 host = gethostname()
 username = getpass.getuser()
 
+############################### PRE-DEFINED PATHS FOR KNOWN CLUSTERS ###############################
 # --- ECMWF JupyterHub with HPC ---
 if host.endswith('bullx'):
     BDD_VERSION = 4.2
@@ -44,20 +45,12 @@ elif host.startswith("spirit"):
 
 # --- LOCAL ---
 else:
-    ############################### LOCAL USER PATHS ###############################
-    # Easy: Add your paths below
-
-    #BDD_PATH = Path('/path/to/your/bdd')  # Example: Path('/home/username/data/bdd')
-    #CACHE_DATA_PATH = Path('/path/to/your/cache')  # Example: Path('/home/username/data/cache')
-    #BDD_VERSION = 4.2
-
-    ################################################################################
+    ############################### LOCAL USER PATHS ##############################
 
     # Advanced: Local hidden config file (To keep your paths private when contributing)
     # Create a file named local_config.py in the same directory as this config.py
     # and define BDD_PATH, CACHE_DATA_PATH, and BDD_VERSION there.
     #DO NOT MODIFY THE LINES BELOW
-
     _local_config = Path(__file__).with_name("local_config.py")
     if _local_config.exists():
         try:
@@ -72,7 +65,15 @@ else:
             })
         except Exception as e:
             warnings.warn(f"Failed to load local_config.py: {e}", RuntimeWarning)
+
+    ################################################################################
+    # Easy: Add your paths below
     else:
+        #BDD_PATH = Path('/path/to/your/bdd')  # Example: Path('/home/username/data/bdd')
+        CACHE_DATA_PATH = Path('data/') # Will point to the pre-computed cache files, but can be customized as
+        #CACHE_DATA_PATH = Path('/path/to/your/cache')  # Example: Path('/home/username/data/cache')
+        #BDD_VERSION = 4.2
+        
         warnings.warn(
             "No local_config.py found. If you setup the local variables directly in config.py, ignore this message.",
             RuntimeWarning,

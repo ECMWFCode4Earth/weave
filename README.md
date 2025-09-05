@@ -25,8 +25,10 @@ There are two notebooks for two different levels of usage:
 2. Make sure you work in a python environment where all the packages listed in `environment.yml` are installed.
 3. Retrieve the data. There are two options: the data archive, and unzip it in the folder of your choice.
    * If you only need daily mean data for existing technologies, you can use the pre-processed cached files in the `data` folder.
-   * If you need other aggregations, download the full NUTS0 PECD4.2 archive (CURRENTLY NOT AVAILABLE!).
+   * If you need other aggregations, download the full NUTS0 PECD4.2 archive (Currently not hosted publicly, but available upon request).
 4. Setup config.py.
+5. Open the package with JupyterLab.
+6. In the JupyterLab, you will need to install the `anywidget` extension. 
 
 ### On the [ECMWF JupyterHub](jupyterhub.ecmwf.int/)
 1. Connect to the [ECMWF JupyterHub](jupyterhub.ecmwf.int/).
@@ -61,11 +63,14 @@ Aggregation Frequency: Raw data is hourly; you can aggregate it to daily, monthl
 - Models: The models you want to consider (ERA5 only covers the historical period; the other models only cover the future period)
 - Scenarios: The scenarios you want to consider (historical only applies to ERA5; "SP" stands for "SSP" (i.e., Shared Socioeconomic Pathways))
 
-## Use the "expert" notebook
+## Advanced usage
 
+### Expert notebook
 
-## Notes on the WeavePy back-end package
-All the functions underpinning the WEAVE visualisation platform are stored in a package named `weavepy`.
+The `expert.ipynb` notebook does the same thing as the `easy.ipynb` notebook, but without the interactive interface. As such, it is more flexible for easy modifications. You can still use it with minimal Python required. 
+
+### The WeavePy back-end package
+All the functions underpinning the WEAVE visualisation platform are stored in a package named `weavepy`. See in there the docstrings to understand what each module and function does. 
 
 # What's next for WEAVE
 1. A few improvements in the vizualisations are planned;

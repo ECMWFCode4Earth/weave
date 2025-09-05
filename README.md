@@ -1,4 +1,4 @@
-![image](logo/Logo/Slide1.png)
+![image](img/logo/Logo/Slide1.png)
 
 This is a Code for Earth Project developed by **[Stella Bourdin](https://stella-bourdin.github.io/) & [Clément Devenet](https://climatclement.com/)**,
 mentored by Edward Comyn-Platt, Laurent Dubus, Aron Zuicker, Stefano Cordeddu & Niclas Rieger.

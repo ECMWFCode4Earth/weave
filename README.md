@@ -73,7 +73,6 @@ The `expert.ipynb` notebook does the same thing as the `easy.ipynb` notebook, bu
 All the functions underpinning the WEAVE visualisation platform are stored in a package named `weavepy`. See in there the docstrings to understand what each module and function does. 
 
 # What's next for WEAVE
-1. A few improvements in the vizualisations are planned;
-2. We would like to make the platform available on ECMWF's ecosystem, and on Climat Clément's website;
-3. Linking up directly to the CDS would be desirable.
-4. After this, maintenance and updates (including support of future PECD versions) will be subject to continued developers' funding and/or recruitment of new contributors.
+1. We would like to make the platform available on ECMWF's ecosystem, and on Climat Clément's website;
+2. Linking up directly to the CDS would be desirable.
+3. After this, maintenance and updates (including support of future PECD versions) will be subject to continued developers' funding and/or recruitment of new contributors.

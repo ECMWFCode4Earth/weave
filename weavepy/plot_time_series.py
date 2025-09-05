@@ -12,6 +12,7 @@ def nb_event_timeseries(events, rolling_window=21):
     """
     # Compute rolling counts
     N_events = count_events(events)
+    N_events = N_events[(N_events.scenario != "historical") | (N_events.year < 2025)] # Year 2025 for historical is incomplete and leads to skewed rolling means.
     Nroll = (
         N_events.groupby(["model", "scenario"])[["year","n_events"]]
         .rolling(rolling_window, center=True)

@@ -37,13 +37,13 @@ def identify_events_one_series(T, series, model="", scenario="", country=""):
         else:
             if event_ongoing:
                 event_ongoing = False
-                duration = (end - start) if isinstance(end, (np.datetime64, pd.Timestamp)) else (end-start)
+                duration = (d - start)
                 events.append([model, scenario, country, eventID, start, end, duration])
                 eventID += 1
                 start = end = None
     # Handle event that goes until last day
     if event_ongoing and start is not None and end is not None:
-        duration = (end - start) if isinstance(end, (np.datetime64, pd.Timestamp)) else (end-start)
+        duration = (d - start) if isinstance(end, (np.datetime64, pd.Timestamp)) else (end-start)
         events.append([model, scenario, country, eventID, start, end, duration])
     return events
 

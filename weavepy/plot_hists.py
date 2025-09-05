@@ -78,86 +78,71 @@ def event_count_barplot(df):
     return fig
 
 def event_duration_hist(e, logy=False):
-    """
-    Plot histogram of event durations per scenario.
-    - Step histogram (proportion)
-    - Semi-transparent fill
-    - Vertical mean line spanning full y-axis
-    - Hover shows scenario, duration, and mean
-    - Optional log-scale y-axis
-    """
-    # 0. Convert durations to days
-    e = e.copy()  # avoid SettingWithCopyWarning
+    e = e.copy()
     e["duration_days"] = e["duration"].astype(int) * 1e-9 / 3600 / 24
 
-    # Determine bins starting at 1 day
     max_day = e["duration_days"].quantile(0.95) + 1
-    bins = np.arange(1, max_day + 1, 1)
+
+    scenarios_sorted = sorted(e.scenario.unique(), key=lambda x: (x != "historical", x))
 
     fig = go.Figure()
 
-    # Sort scenarios: historical first
-    scenarios_sorted = sorted(e.scenario.unique(), key=lambda x: (x != "historical", x))
-
-    for scenario in scenarios_sorted:
-        dur = e.loc[e.scenario == scenario, "duration_days"].dropna().values
-        if len(dur) == 0:
-            continue
-
-        counts, edges = np.histogram(dur, bins=bins)
-        counts_prop = counts / counts.sum()
-
-        # Step coordinates
-        x_step = np.repeat(edges, 2)[1:-1]
-        y_step = np.repeat(counts_prop, 2)
-
-        base_color = scenario_colors[scenario]
-        fill_color = _rgb_to_rgba(base_color, 0.15)
-
-        # 1. Histogram step trace
-        fig.add_trace(go.Scatter(
-            x=x_step,
-            y=y_step,
-            mode="lines",
-            line=dict(color=base_color, width=3),
-            fill="tozeroy",
-            fillcolor=fill_color,
+    traces = [
+        go.Histogram(
+            x=e.loc[e.scenario == scenario, "duration_days"],
+            xbins=dict(start=0.5, end=max_day, size=1),
+            histnorm="probability",
             name=scenario,
-            legendgroup=scenario,
-            showlegend=True,
+            legendgroup=scenario,  # 👈 group by scenario
+            marker=dict(
+                color=_rgb_to_rgba(scenario_colors[scenario], 0.15),
+                line=dict(color=scenario_colors[scenario], width=2)
+            ),
             hovertemplate=(
                 f"Scenario: {scenario}<br>"
                 "Duration: %{x:.0f} days<br>"
-                "Proportion: %{y:.3%}<extra></extra>"
+                "Proportion: %{y:.1%}<extra></extra>"
             )
-        ))
-        
-        # 2. Mean vertical line that spans the histogram
+        )
+        for scenario in scenarios_sorted
+    ]
+
+
+    fig.add_traces(traces)
+
+    # Mean markers below histogram
+    for scenario in scenarios_sorted:
+        dur = e.loc[e.scenario == scenario, "duration_days"].dropna()
+        if len(dur) == 0:
+            continue
         mean_val = dur.mean()
-        ymax = y_step.max()  # max proportion in histogram
+        base_color = scenario_colors[scenario]
+
         fig.add_trace(go.Scatter(
-            x=[mean_val, mean_val],
-            y=[0, ymax],
-            mode="lines",
-            line=dict(color=base_color, width=2, dash="dash"),
-            legendgroup=scenario,
-            showlegend=True,
+            x=[mean_val],
+            y=[-0.02],
+            mode="markers",
+            marker=dict(symbol="triangle-down", size=12, color=base_color),
             name=f"{scenario} mean",
+            legendgroup=scenario,  # same group as histogram
             hovertemplate=f"{scenario} mean: {mean_val:.2f} days<extra></extra>"
         ))
-    # Layout
+
+
     fig.update_layout(
         xaxis_title="Duration (days)",
         yaxis_title="Proportion",
         yaxis_type="log" if logy else "linear",
         template="simple_white",
-        legend=dict(groupclick="togglegroup")
+        legend=dict(groupclick="togglegroup"),
+        barmode="overlay"   # overlay bars instead of side by side
     )
 
-    # Optionally format y-axis as percent
+    fig.update_xaxes(tick0=1, dtick=1)
     fig.update_yaxes(tickformat=".0%")
 
-    return fig   
+    return fig
+    
 def event_seasonality_kde(d): 
 
     fig = go.Figure()

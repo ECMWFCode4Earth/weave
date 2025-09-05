@@ -136,17 +136,19 @@ def event_duration_hist_multi(dfs, historical_period, future_period, logy=False,
     - Historical scenario always first
     """
 
-    # Filter period
-    if (len(historical_period) > 0) & (len(future_period) > 0):
+    # --- Filter period ---
+    if historical_period and future_period:
         for i in range(len(dfs)):
-            dfs[i] = dfs[i][dfs[i].year.between(*historical_period) |
-                            dfs[i].year.between(*future_period)].copy()
+            dfs[i] = dfs[i][
+                dfs[i].year.between(*historical_period)
+                | dfs[i].year.between(*future_period)
+            ].copy()
 
     n = len(dfs)
     if titles is None:
         titles = [f"Dataset {i+1}" for i in range(n)]
 
-    # Subplots, vertical stacking
+    # Define the subplots, with vertical stacking
     fig = make_subplots(
         rows=n, cols=1,
         subplot_titles=titles,
@@ -154,25 +156,17 @@ def event_duration_hist_multi(dfs, historical_period, future_period, logy=False,
         vertical_spacing=0.05
     )
 
+    # Trace the individual panels with corresponding histogram
     for i, df in enumerate(dfs):
         subfig = event_duration_hist(df, logy=logy)
-        # Sort scenarios so historical is first
-        scenarios_sorted = sorted(df.scenario.unique(), key=lambda x: (x != "historical", x))
         
         for trace in subfig.data:
-            # Base scenario name (for grouping)
             scenario_name = trace.name.split()[0]
             trace.legendgroup = scenario_name  # group shading + mean line
             trace.showlegend = (i == 0)  # only show in first panel
-            # Use legendrank to stack shading above mean line
-            # shading comes first in event_duration_hist
-            rank = scenarios_sorted.index(scenario_name)
-            if "mean" in trace.name.lower():
-                trace.legendrank = rank + 0.5  # mean below shading
-            else:
-                trace.legendrank = rank
             fig.add_trace(trace, row=i+1, col=1)
 
+    
     fig.update_layout(
         height=300*n,
         showlegend=True,
@@ -186,14 +180,16 @@ def event_duration_hist_multi(dfs, historical_period, future_period, logy=False,
             itemwidth=40,         # keeps the width for each item
             traceorder="normal",
             groupclick="togglegroup"
-        )
+        ),
+        barmode="overlay",   # overlay bars instead of side by side
+        template="simple_white",
     )
 
-    
     # Axis titles
     for i in range(n):
         fig.update_yaxes(title_text="Proportion", row=i+1, col=1, tickformat=".0%")
     fig.update_xaxes(title_text="Duration (days)", row=n, col=1)
+    fig.update_xaxes(tick0=1, dtick=1)
 
     return go.FigureWidget(fig)
 
